@@ -3,8 +3,7 @@ import 'package:http/http.dart' as http;
 import '../helpers/url_helper.dart';
 
 class ApiService {
-  static const String _baseUrl =
-      'http://192.168.18.31:8000/api'; // Substitua pela URL da sua API
+  // Substitua pela URL da sua API
 
   static Future<Map<String, dynamic>> enviarVisita(
       Map<String, dynamic> dadosVisita) async {
