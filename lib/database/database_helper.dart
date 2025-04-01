@@ -90,11 +90,14 @@ class DatabaseHelper {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         problema_redutor_principal INTEGER NOT NULL,
         comentario_redutor_principal TEXT,
+        lubrificante_redutor_principal TEXT,
         problema_temperatura INTEGER NOT NULL,
         comentario_temperatura TEXT,
         problema_tambor_principal INTEGER NOT NULL,
         comentario_tambor_principal TEXT,
         mypress_visita_id INTEGER NOT NULL,
+        graxa_rolamentos_zonas_quentes TEXT,
+        graxa_tambor_principal TEXT,
         FOREIGN KEY (mypress_visita_id) REFERENCES visitas (id)
       )
     ''');
@@ -199,11 +202,14 @@ class DatabaseHelper {
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           problema_redutor_principal INTEGER NOT NULL,
           comentario_redutor_principal TEXT,
+          lubrificante_redutor_principal TEXT,
           problema_temperatura INTEGER NOT NULL,
           comentario_temperatura TEXT,
           problema_tambor_principal INTEGER NOT NULL,
           comentario_tambor_principal TEXT,
           mypress_visita_id INTEGER NOT NULL,
+          graxa_rolamentos_zonas_quentes TEXT,
+          graxa_tambor_principal TEXT,
           FOREIGN KEY (mypress_visita_id) REFERENCES visitas (id)
         )
       ''');

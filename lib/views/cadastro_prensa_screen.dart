@@ -36,6 +36,28 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
   final List<String> _tiposProdutos = ['MDF', 'HDF', 'MDP', 'OSB'];
   String? _produtoSelecionado;
 
+  final List<String> _tiposProdutosCinta = [
+    'Hotemp Super N',
+    'Hotemp Super N Plus',
+    'Klubersynh CP 2-260'
+  ];
+  String? _produtoCintaSelecionado;
+
+  final List<String> _tiposProdutosCorrente = [
+    'Hotemp Super CH 2-100',
+    'Klubersynh CP 2-100',
+    'Hotemp Super N',
+    'Hotemp Super N Plus',
+    'Klubersynh CP 2-260'
+  ];
+  String? _produtoCorrenteSelecionado;
+
+  final List<String> _tiposProdutosBendroads = [
+    'Hotemp Super CH 2-100',
+    'Klubersynh CP 2-100'
+  ];
+  String? _produtoBendroadsSelecionado;
+
   void _salvarPrensa() async {
     if (_formKey.currentState!.validate()) {
       try {
@@ -46,9 +68,9 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
           espessura: double.parse(_espessuraController.text),
           produto: _produtoSelecionado!,
           velocidade: double.parse(_velocidadeController.text),
-          produtoCinta: _produtoCintaController.text,
-          produtoCorrente: _produtoCorrenteController.text,
-          produtoBendroads: _produtoBendroadsController.text,
+          produtoCinta: _produtoCintaSelecionado!,
+          produtoCorrente: _produtoCorrenteSelecionado!,
+          produtoBendroads: _produtoBendroadsSelecionado!,
           visitaId: widget.visitaId,
         );
 
@@ -231,38 +253,116 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
                       value?.isEmpty ?? true ? 'Campo obrigatório' : null,
                 ),
                 const SizedBox(height: 16),
-                TextFormField(
-                  controller: _produtoCintaController,
-                  style: const TextStyle(color: Colors.white),
+                DropdownButtonFormField<String>(
+                  value: _produtoCintaSelecionado,
                   decoration: const InputDecoration(
                     labelText: 'Produto Cinta',
+                    labelStyle: TextStyle(color: Colors.white),
                     prefixIcon:
                         Icon(Icons.inventory_2, color: Color(0xFFFABA00)),
+                    enabledBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey),
+                    ),
+                    focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFFABA00)),
+                    ),
+                    border: UnderlineInputBorder(),
                   ),
-                  validator: (value) =>
-                      value?.isEmpty ?? true ? 'Campo obrigatório' : null,
+                  icon: const Icon(Icons.arrow_drop_down,
+                      color: Color(0xFFFABA00)),
+                  dropdownColor: Colors.grey[900],
+                  style: const TextStyle(color: Colors.white),
+                  items: _tiposProdutosCinta.map((String produto) {
+                    return DropdownMenuItem<String>(
+                      value: produto,
+                      child: Text(produto),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      _produtoCintaSelecionado = newValue;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor, selecione o produto da cinta';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 16),
-                TextFormField(
-                  controller: _produtoCorrenteController,
-                  style: const TextStyle(color: Colors.white),
+                DropdownButtonFormField<String>(
+                  value: _produtoCorrenteSelecionado,
                   decoration: const InputDecoration(
                     labelText: 'Produto Corrente',
+                    labelStyle: TextStyle(color: Colors.white),
                     prefixIcon: Icon(Icons.link, color: Color(0xFFFABA00)),
+                    enabledBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey),
+                    ),
+                    focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFFABA00)),
+                    ),
+                    border: UnderlineInputBorder(),
                   ),
-                  validator: (value) =>
-                      value?.isEmpty ?? true ? 'Campo obrigatório' : null,
+                  icon: const Icon(Icons.arrow_drop_down,
+                      color: Color(0xFFFABA00)),
+                  dropdownColor: Colors.grey[900],
+                  style: const TextStyle(color: Colors.white),
+                  items: _tiposProdutosCorrente.map((String produto) {
+                    return DropdownMenuItem<String>(
+                      value: produto,
+                      child: Text(produto),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      _produtoCorrenteSelecionado = newValue;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor, selecione o produto da corrente';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 16),
-                TextFormField(
-                  controller: _produtoBendroadsController,
-                  style: const TextStyle(color: Colors.white),
+                DropdownButtonFormField<String>(
+                  value: _produtoBendroadsSelecionado,
                   decoration: const InputDecoration(
                     labelText: 'Produto Bendroads',
+                    labelStyle: TextStyle(color: Colors.white),
                     prefixIcon: Icon(Icons.category, color: Color(0xFFFABA00)),
+                    enabledBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey),
+                    ),
+                    focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFFABA00)),
+                    ),
+                    border: UnderlineInputBorder(),
                   ),
-                  validator: (value) =>
-                      value?.isEmpty ?? true ? 'Campo obrigatório' : null,
+                  icon: const Icon(Icons.arrow_drop_down,
+                      color: Color(0xFFFABA00)),
+                  dropdownColor: Colors.grey[900],
+                  style: const TextStyle(color: Colors.white),
+                  items: _tiposProdutosBendroads.map((String produto) {
+                    return DropdownMenuItem<String>(
+                      value: produto,
+                      child: Text(produto),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      _produtoBendroadsSelecionado = newValue;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor, selecione o produto bendroads';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 32),
                 SizedBox(

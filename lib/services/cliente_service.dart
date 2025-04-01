@@ -1,34 +1,37 @@
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../models/cliente_model.dart';
 import '../models/usuario_kluber_model.dart';
 import '../helpers/url_helper.dart';
 
 class ClienteService {
+  static const String _clientesKey = 'cached_clientes';
+  static const String _usuariosKey = 'cached_usuarios_kluber';
+
   Future<List<Cliente>> getClientes() async {
     try {
       final response = await http.post(
         Uri.parse(UrlHelper.clientesUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          // Adicione outros headers necessários aqui
-        },
-        // Adicione body se necessário
-        // body: json.encode({
-        //   'chave': 'valor',
-        // }),
+        headers: {'Content-Type': 'application/json'},
       );
 
       if (response.statusCode == 200) {
-        // Para debug
         final List<dynamic> data = json.decode(response.body);
-        return data.map((json) => Cliente.fromJson(json)).toList();
+        final clientes = data.map((json) => Cliente.fromJson(json)).toList();
+
+        // Salvar no cache
+        await _salvarClientesCache(clientes);
+
+        return clientes;
       } else {
-        throw 'Erro ao carregar clientes';
+        // Se falhar, tentar retornar do cache
+        return await _getClientesCache();
       }
     } catch (e) {
-      print('Erro ao buscar clientes: $e'); // Para debug
-      throw e.toString();
+      print('Erro ao buscar clientes online: $e');
+      // Em caso de erro (sem internet), retornar do cache
+      return await _getClientesCache();
     }
   }
 
@@ -36,20 +39,74 @@ class ClienteService {
     try {
       final response = await http.post(
         Uri.parse(UrlHelper.usuariosKluberUrl),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
       );
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
-        return data.map((json) => UsuarioKluber.fromJson(json)).toList();
+        final usuarios =
+            data.map((json) => UsuarioKluber.fromJson(json)).toList();
+
+        // Salvar no cache
+        await _salvarUsuariosCache(usuarios);
+
+        return usuarios;
       } else {
-        throw 'Erro ao carregar usuários';
+        // Se falhar, tentar retornar do cache
+        return await _getUsuariosCache();
       }
     } catch (e) {
-      print('Erro ao buscar usuários: $e'); // Para debug
-      throw e.toString();
+      print('Erro ao buscar usuários online: $e');
+      // Em caso de erro (sem internet), retornar do cache
+      return await _getUsuariosCache();
+    }
+  }
+
+  // Métodos para gerenciar o cache de clientes
+  Future<void> _salvarClientesCache(List<Cliente> clientes) async {
+    final prefs = await SharedPreferences.getInstance();
+    final clientesJson = clientes.map((c) => c.toJson()).toList();
+    await prefs.setString(_clientesKey, json.encode(clientesJson));
+  }
+
+  Future<List<Cliente>> _getClientesCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final clientesString = prefs.getString(_clientesKey);
+
+      if (clientesString != null) {
+        final List<dynamic> clientesJson = json.decode(clientesString);
+        return clientesJson.map((json) => Cliente.fromJson(json)).toList();
+      }
+      return [];
+    } catch (e) {
+      print('Erro ao ler cache de clientes: $e');
+      return [];
+    }
+  }
+
+  // Métodos para gerenciar o cache de usuários
+  Future<void> _salvarUsuariosCache(List<UsuarioKluber> usuarios) async {
+    final prefs = await SharedPreferences.getInstance();
+    final usuariosJson = usuarios.map((u) => u.toJson()).toList();
+    await prefs.setString(_usuariosKey, json.encode(usuariosJson));
+  }
+
+  Future<List<UsuarioKluber>> _getUsuariosCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final usuariosString = prefs.getString(_usuariosKey);
+
+      if (usuariosString != null) {
+        final List<dynamic> usuariosJson = json.decode(usuariosString);
+        return usuariosJson
+            .map((json) => UsuarioKluber.fromJson(json))
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      print('Erro ao ler cache de usuários: $e');
+      return [];
     }
   }
 }

@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/visita_model.dart';
 import '../database/database_helper.dart';
-import 'selecionar_cadastro_screen.dart';
 import '../widgets/custom_bottom_nav.dart';
 import 'cadastro_visita_screen.dart';
+import 'selecionar_cadastro_screen.dart';
+import '../models/prensa_model.dart';
+import '../models/elemento_model.dart';
+import '../models/problema_model.dart';
 
 class ListaVisitasScreen extends StatefulWidget {
   const ListaVisitasScreen({super.key});
@@ -130,6 +133,14 @@ class _ListaVisitasScreenState extends State<ListaVisitasScreen> {
                                         ),
                                       ),
                                     ),
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.copy,
+                                        color: Color(0xFFFABA00),
+                                      ),
+                                      onPressed: () => _duplicarVisita(visita),
+                                      tooltip: 'Duplicar visita',
+                                    ),
                                   ],
                                 ),
                                 const SizedBox(height: 8),
@@ -195,5 +206,92 @@ class _ListaVisitasScreenState extends State<ListaVisitasScreen> {
         },
       ),
     );
+  }
+
+  Future<void> _duplicarVisita(Visita visita) async {
+    try {
+      final novaVisita = Visita(
+        dataVisita: DateTime.now(),
+        cliente: visita.cliente,
+        contatoCliente: visita.contatoCliente,
+        contatoKluber: visita.contatoKluber,
+      );
+
+      final novaVisitaId =
+          await DatabaseHelper.instance.createVisita(novaVisita);
+
+      final prensas =
+          await DatabaseHelper.instance.getPrensasByVisita(visita.id!);
+      for (var prensa in prensas) {
+        final novaPrensa = Prensa(
+          tipoPrensa: prensa.tipoPrensa,
+          fabricante: prensa.fabricante,
+          comprimento: prensa.comprimento,
+          espessura: prensa.espessura,
+          produto: prensa.produto,
+          velocidade: prensa.velocidade,
+          produtoCinta: prensa.produtoCinta,
+          produtoCorrente: prensa.produtoCorrente,
+          produtoBendroads: prensa.produtoBendroads,
+          visitaId: novaVisitaId,
+        );
+
+        final novaPrensaId =
+            await DatabaseHelper.instance.createPrensa(novaPrensa);
+
+        final elementos =
+            await DatabaseHelper.instance.getElementsByPrensa(prensa.id!);
+        for (var elemento in elementos) {
+          final novoElemento = Elemento(
+            consumo1: elemento.consumo1,
+            consumo2: elemento.consumo2,
+            consumo3: elemento.consumo3,
+            toma: elemento.toma,
+            posicao: elemento.posicao,
+            tipo: elemento.tipo,
+            mypress: elemento.mypress,
+            prensaId: novaPrensaId,
+          );
+          await DatabaseHelper.instance.createElemento(novoElemento);
+        }
+      }
+
+      final problemas =
+          await DatabaseHelper.instance.getProblemasByVisita(visita.id!);
+      for (var problema in problemas) {
+        final novoProblema = Problema(
+          problemaRedutorPrincipal: problema.problemaRedutorPrincipal,
+          comentarioRedutorPrincipal: problema.comentarioRedutorPrincipal,
+          lubrificanteRedutorPrincipal: problema.lubrificanteRedutorPrincipal,
+          problemaTemperatura: problema.problemaTemperatura,
+          comentarioTemperatura: problema.comentarioTemperatura,
+          problemaTamborPrincipal: problema.problemaTamborPrincipal,
+          comentarioTamborPrincipal: problema.comentarioTamborPrincipal,
+          myPressVisitaId: novaVisitaId,
+          graxaRolamentosZonasQuentes: problema.graxaRolamentosZonasQuentes,
+          graxaTamborPrincipal: problema.graxaTamborPrincipal,
+        );
+        await DatabaseHelper.instance.createProblema(novoProblema);
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Visita duplicada com sucesso!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        _carregarVisitas();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao duplicar visita: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }

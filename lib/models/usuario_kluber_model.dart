@@ -16,4 +16,12 @@ class UsuarioKluber {
       nomeUsuarioCompleto: json['nome_usuario_completo'],
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'nome_usuario': nomeUsuario,
+      'nome_usuario_completo': nomeUsuarioCompleto,
+    };
+  }
 } 

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../models/visita_model.dart';
 import '../database/database_helper.dart';
 import '../services/api_service.dart';
+import '../widgets/custom_bottom_nav.dart';
+import 'cadastro_visita_screen.dart';
 
 class VisitasPendentesScreen extends StatefulWidget {
   const VisitasPendentesScreen({super.key});
@@ -13,6 +15,7 @@ class VisitasPendentesScreen extends StatefulWidget {
 class _VisitasPendentesScreenState extends State<VisitasPendentesScreen> {
   bool _isLoading = false;
   List<Visita> _visitasPendentes = [];
+  int _currentIndex = 3; // Índice 3 para a aba de visitas pendentes
 
   @override
   void initState() {
@@ -296,6 +299,24 @@ class _VisitasPendentesScreenState extends State<VisitasPendentesScreen> {
                     );
                   },
                 ),
+      bottomNavigationBar: CustomBottomNav(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          if (index != 2) {
+            setState(() {
+              _currentIndex = index;
+            });
+          }
+        },
+        onAddVisitPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const CadastroVisitaScreen(),
+            ),
+          ).then((_) => _carregarVisitasPendentes());
+        },
+      ),
     );
   }
 }

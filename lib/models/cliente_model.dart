@@ -28,4 +28,16 @@ class Cliente {
       ativo: json['ativo'],
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'codigo_empresa': codigoEmpresa,
+      'codigo_cliente': codigoCliente,
+      'razao_social': razaoSocial,
+      'nome_fantasia': nomeFantasia,
+      'email': email,
+      'ativo': ativo,
+    };
+  }
 } 
