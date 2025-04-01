@@ -19,18 +19,12 @@ class ClienteService {
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         final clientes = data.map((json) => Cliente.fromJson(json)).toList();
-
-        // Salvar no cache
         await _salvarClientesCache(clientes);
-
         return clientes;
       } else {
-        // Se falhar, tentar retornar do cache
         return await _getClientesCache();
       }
     } catch (e) {
-      print('Erro ao buscar clientes online: $e');
-      // Em caso de erro (sem internet), retornar do cache
       return await _getClientesCache();
     }
   }
@@ -46,23 +40,16 @@ class ClienteService {
         final List<dynamic> data = json.decode(response.body);
         final usuarios =
             data.map((json) => UsuarioKluber.fromJson(json)).toList();
-
-        // Salvar no cache
         await _salvarUsuariosCache(usuarios);
-
         return usuarios;
       } else {
-        // Se falhar, tentar retornar do cache
         return await _getUsuariosCache();
       }
     } catch (e) {
-      print('Erro ao buscar usuários online: $e');
-      // Em caso de erro (sem internet), retornar do cache
       return await _getUsuariosCache();
     }
   }
 
-  // Métodos para gerenciar o cache de clientes
   Future<void> _salvarClientesCache(List<Cliente> clientes) async {
     final prefs = await SharedPreferences.getInstance();
     final clientesJson = clientes.map((c) => c.toJson()).toList();
@@ -80,12 +67,10 @@ class ClienteService {
       }
       return [];
     } catch (e) {
-      print('Erro ao ler cache de clientes: $e');
       return [];
     }
   }
 
-  // Métodos para gerenciar o cache de usuários
   Future<void> _salvarUsuariosCache(List<UsuarioKluber> usuarios) async {
     final prefs = await SharedPreferences.getInstance();
     final usuariosJson = usuarios.map((u) => u.toJson()).toList();
@@ -105,7 +90,6 @@ class ClienteService {
       }
       return [];
     } catch (e) {
-      print('Erro ao ler cache de usuários: $e');
       return [];
     }
   }
