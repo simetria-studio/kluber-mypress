@@ -8,6 +8,8 @@ class ApiService {
   static Future<Map<String, dynamic>> enviarVisita(
       Map<String, dynamic> dadosVisita) async {
     try {
+      print(UrlHelper.visitasUrl);
+      // print('Enviando visita: $dadosVisita');
       final response = await http.post(
         Uri.parse(UrlHelper.visitasUrl),
         headers: {
@@ -29,6 +31,7 @@ class ApiService {
 
       return responseData;
     } catch (e) {
+      print('Erro ao enviar visita: $e');
       throw Exception('Erro de conexão: ${e.toString()}');
     }
   }

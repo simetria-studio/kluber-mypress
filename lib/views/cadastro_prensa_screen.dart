@@ -5,10 +5,12 @@ import 'selecionar_elemento_screen.dart';
 
 class CadastroPrensaScreen extends StatefulWidget {
   final int visitaId;
+  final Prensa? prensa;
 
   const CadastroPrensaScreen({
     super.key,
     required this.visitaId,
+    this.prensa,
   });
 
   @override
@@ -19,19 +21,19 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
   final _formKey = GlobalKey<FormState>();
   final _fabricanteController = TextEditingController();
   final _comprimentoController = TextEditingController();
-  final _espessuraController = TextEditingController();
+  final _espressuraController = TextEditingController();
   final _produtoController = TextEditingController();
   final _velocidadeController = TextEditingController();
   final _produtoCintaController = TextEditingController();
   final _produtoCorrenteController = TextEditingController();
   final _produtoBendroadsController = TextEditingController();
 
-  final List<String> _tiposPrensas = [
+  final List<String> _fabricantes = [
     'Dieffenbacher',
     'Siempelkamp',
     'Kusters'
   ];
-  String? _tipoPrensaSelecionado;
+  String? _fabricanteSelecionado;
 
   final List<String> _tiposProdutos = ['MDF', 'HDF', 'MDP', 'OSB'];
   String? _produtoSelecionado;
@@ -58,50 +60,71 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
   ];
   String? _produtoBendroadsSelecionado;
 
+  @override
+  void initState() {
+    super.initState();
+    if (widget.prensa != null) {
+      _fabricanteSelecionado = widget.prensa!.fabricante;
+      _comprimentoController.text = widget.prensa!.comprimento.toString();
+      _espressuraController.text = widget.prensa!.espressura.toString();
+      _produtoSelecionado = widget.prensa!.produto;
+      _velocidadeController.text = widget.prensa!.velocidade.toString();
+      _produtoCintaSelecionado = widget.prensa!.produtoCinta;
+      _produtoCorrenteSelecionado = widget.prensa!.produtoCorrente;
+      _produtoBendroadsSelecionado = widget.prensa!.produtoBendroads;
+    }
+  }
+
   void _salvarPrensa() async {
     if (_formKey.currentState!.validate()) {
       try {
         final prensa = Prensa(
-          tipoPrensa: _tipoPrensaSelecionado!,
-          fabricante: _fabricanteController.text,
+          id: widget.prensa?.id,
+          visitaId: widget.visitaId,
+          tipoPrensa: _fabricanteSelecionado!,
+          fabricante: _fabricanteSelecionado!,
           comprimento: double.parse(_comprimentoController.text),
-          espessura: double.parse(_espessuraController.text),
+          espressura: double.parse(_espressuraController.text),
           produto: _produtoSelecionado!,
           velocidade: double.parse(_velocidadeController.text),
           produtoCinta: _produtoCintaSelecionado!,
           produtoCorrente: _produtoCorrenteSelecionado!,
           produtoBendroads: _produtoBendroadsSelecionado!,
-          visitaId: widget.visitaId,
         );
 
-        final prensaId = await DatabaseHelper.instance.createPrensa(prensa);
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Prensa cadastrada com sucesso!')),
-          );
-
-          // Adicionando um pequeno delay para garantir que o SnackBar seja exibido
-          await Future.delayed(const Duration(milliseconds: 500));
-
+        if (widget.prensa != null) {
+          await DatabaseHelper.instance.updatePrensa(prensa);
           if (mounted) {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => SelecionarElementoScreen(
-                  prensaId: prensaId,
-                  visitaId: widget.visitaId,
-                ),
-              ),
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Prensa atualizada com sucesso!')),
             );
+            Navigator.pop(context, true);
+          }
+        } else {
+          final prensaId = await DatabaseHelper.instance.createPrensa(prensa);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Prensa cadastrada com sucesso!')),
+            );
+            await Future.delayed(const Duration(milliseconds: 500));
+            if (mounted) {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SelecionarElementoScreen(
+                    prensaId: prensaId,
+                    visitaId: widget.visitaId,
+                  ),
+                ),
+              );
+            }
           }
         }
       } catch (e) {
-        print('Erro ao cadastrar prensa: ${e.toString()}');
+        print('Erro ao salvar prensa: ${e.toString()}');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text('Erro ao cadastrar prensa: ${e.toString()}')),
+            SnackBar(content: Text('Erro ao salvar prensa: ${e.toString()}')),
           );
         }
       }
@@ -114,9 +137,9 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: const Text(
-          'Cadastrar Prensa',
-          style: TextStyle(color: Color(0xFFFABA00)),
+        title: Text(
+          widget.prensa != null ? 'Editar Prensa' : 'Cadastrar Prensa',
+          style: const TextStyle(color: Color(0xFFFABA00)),
         ),
         iconTheme: const IconThemeData(color: Color(0xFFFABA00)),
       ),
@@ -128,12 +151,11 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
             child: Column(
               children: [
                 DropdownButtonFormField<String>(
-                  value: _tipoPrensaSelecionado,
+                  value: _fabricanteSelecionado,
                   decoration: const InputDecoration(
-                    labelText: 'Tipo de Prensa',
+                    labelText: 'Fabricante',
                     labelStyle: TextStyle(color: Colors.white),
-                    prefixIcon: Icon(Icons.precision_manufacturing,
-                        color: Color(0xFFFABA00)),
+                    prefixIcon: Icon(Icons.factory, color: Color(0xFFFABA00)),
                     enabledBorder: UnderlineInputBorder(
                       borderSide: BorderSide(color: Colors.grey),
                     ),
@@ -146,34 +168,23 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
                       color: Color(0xFFFABA00)),
                   dropdownColor: Colors.grey[900],
                   style: const TextStyle(color: Colors.white),
-                  items: _tiposPrensas.map((String tipo) {
+                  items: _fabricantes.map((String fabricante) {
                     return DropdownMenuItem<String>(
-                      value: tipo,
-                      child: Text(tipo),
+                      value: fabricante,
+                      child: Text(fabricante),
                     );
                   }).toList(),
                   onChanged: (String? newValue) {
                     setState(() {
-                      _tipoPrensaSelecionado = newValue;
+                      _fabricanteSelecionado = newValue;
                     });
                   },
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Por favor, selecione o tipo de prensa';
+                      return 'Por favor, selecione o fabricante';
                     }
                     return null;
                   },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _fabricanteController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Fabricante',
-                    prefixIcon: Icon(Icons.factory, color: Color(0xFFFABA00)),
-                  ),
-                  validator: (value) =>
-                      value?.isEmpty ?? true ? 'Campo obrigatório' : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -191,7 +202,7 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
-                  controller: _espessuraController,
+                  controller: _espressuraController,
                   style: const TextStyle(color: Colors.white),
                   decoration: const InputDecoration(
                     labelText: 'Espessura',
@@ -398,7 +409,7 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
   void dispose() {
     _fabricanteController.dispose();
     _comprimentoController.dispose();
-    _espessuraController.dispose();
+    _espressuraController.dispose();
     _produtoController.dispose();
     _velocidadeController.dispose();
     _produtoCintaController.dispose();

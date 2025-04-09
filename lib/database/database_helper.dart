@@ -7,6 +7,7 @@ import '../models/problema_model.dart';
 import '../models/comentario_elemento_model.dart';
 import '../models/anexo_comentario_model.dart';
 import '../models/temperatura_elemento_model.dart';
+import '../models/temperatura_prensa_model.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
@@ -26,8 +27,9 @@ class DatabaseHelper {
 
     final db = await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _createDB,
+      onUpgrade: _onUpgrade,
       onConfigure: _onConfigure,
       onOpen: (db) async {
         await _verificarECriarTabelas(db);
@@ -41,14 +43,56 @@ class DatabaseHelper {
     await db.execute('PRAGMA foreign_keys = ON');
   }
 
+  Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      try {
+        // Verifica se a coluna já existe
+        var columns = await db.rawQuery('PRAGMA table_info(visitas)');
+        bool hasEnviadoColumn = columns.any((column) => column['name'] == 'enviado');
+        
+        if (!hasEnviadoColumn) {
+          // Adiciona a coluna enviado na tabela visitas
+          await db.execute('ALTER TABLE visitas ADD COLUMN enviado INTEGER DEFAULT 0');
+          // Atualiza registros existentes
+          await db.execute('UPDATE visitas SET enviado = 0 WHERE enviado IS NULL');
+        }
+      } catch (e) {
+        print('Erro durante upgrade do banco: $e');
+        // Se falhar ao adicionar a coluna, tenta recriar a tabela
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS visitas_temp(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            data_visita TEXT,
+            cliente TEXT,
+            contato_cliente TEXT,
+            contato_kluber TEXT,
+            enviado INTEGER DEFAULT 0
+          )
+        ''');
+        
+        // Copia dados existentes
+        await db.execute('''
+          INSERT INTO visitas_temp(id, data_visita, cliente, contato_cliente, contato_kluber)
+          SELECT id, data_visita, cliente, contato_cliente, contato_kluber FROM visitas
+        ''');
+        
+        // Remove tabela antiga
+        await db.execute('DROP TABLE visitas');
+        
+        // Renomeia a nova tabela
+        await db.execute('ALTER TABLE visitas_temp RENAME TO visitas');
+      }
+    }
+  }
+
   Future _createDB(Database db, int version) async {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS visitas(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        data_visita TEXT NOT NULL,
-        cliente TEXT NOT NULL,
-        contato_cliente TEXT NOT NULL,
-        contato_kluber TEXT NOT NULL,
+        data_visita TEXT,
+        cliente TEXT,
+        contato_cliente TEXT,
+        contato_kluber TEXT,
         enviado INTEGER DEFAULT 0
       )
     ''');
@@ -56,16 +100,16 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS prensas(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        tipo_prensa TEXT NOT NULL,
-        fabricante TEXT NOT NULL,
-        comprimento REAL NOT NULL,
-        espessura REAL NOT NULL,
-        produto TEXT NOT NULL,
-        velocidade REAL NOT NULL,
-        produto_cinta TEXT NOT NULL,
-        produto_corrente TEXT NOT NULL,
-        produto_bendroads TEXT NOT NULL,
-        visita_id INTEGER NOT NULL,
+        tipo_prensa TEXT,
+        fabricante TEXT,
+        comprimento REAL,
+        espressura REAL,
+        produto TEXT,
+        velocidade REAL,
+        produto_cinta TEXT,
+        produto_corrente TEXT,
+        produto_bendroads TEXT,
+        visita_id INTEGER,
         FOREIGN KEY (visita_id) REFERENCES visitas (id)
       )
     ''');
@@ -73,32 +117,31 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS elementos(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        consumo1 REAL NOT NULL,
-        consumo2 REAL NOT NULL,
-        consumo3 REAL NOT NULL,
-        toma TEXT NOT NULL,
-        posicao TEXT NOT NULL,
-        tipo TEXT NOT NULL,
-        mypress TEXT NOT NULL,
-        prensa_id INTEGER NOT NULL,
-        FOREIGN KEY (prensa_id) REFERENCES prensas (id) ON DELETE CASCADE
+        consumo1 REAL,
+        consumo2 REAL,
+        consumo3 REAL,
+        toma TEXT,
+        posicao TEXT,
+        tipo TEXT,
+        prensa_id INTEGER,
+        FOREIGN KEY (prensa_id) REFERENCES prensas (id)
       )
     ''');
 
     await db.execute('''
       CREATE TABLE IF NOT EXISTS problemas(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        problema_redutor_principal INTEGER NOT NULL,
+        problema_redutor_principal TEXT,
         comentario_redutor_principal TEXT,
         lubrificante_redutor_principal TEXT,
-        problema_temperatura INTEGER NOT NULL,
+        problema_temperatura TEXT,
         comentario_temperatura TEXT,
-        problema_tambor_principal INTEGER NOT NULL,
+        problema_tambor_principal TEXT,
         comentario_tambor_principal TEXT,
-        mypress_visita_id INTEGER NOT NULL,
         graxa_rolamentos_zonas_quentes TEXT,
         graxa_tambor_principal TEXT,
-        FOREIGN KEY (mypress_visita_id) REFERENCES visitas (id)
+        visita_id INTEGER,
+        FOREIGN KEY (visita_id) REFERENCES visitas (id)
       )
     ''');
 
@@ -151,29 +194,67 @@ class DatabaseHelper {
       await db.execute('''
         CREATE TABLE IF NOT EXISTS visitas(
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          data_visita TEXT NOT NULL,
-          cliente TEXT NOT NULL,
-          contato_cliente TEXT NOT NULL,
-          contato_kluber TEXT NOT NULL,
+          data_visita TEXT,
+          cliente TEXT,
+          contato_cliente TEXT,
+          contato_kluber TEXT,
           enviado INTEGER DEFAULT 0
         )
       ''');
+    } else {
+      try {
+        // Verifica se a coluna enviado existe
+        var columns = await db.rawQuery('PRAGMA table_info(visitas)');
+        bool hasEnviadoColumn = columns.any((column) => column['name'] == 'enviado');
+        
+        if (!hasEnviadoColumn) {
+          // Tenta adicionar a coluna
+          await db.execute('ALTER TABLE visitas ADD COLUMN enviado INTEGER DEFAULT 0');
+          // Atualiza registros existentes
+          await db.execute('UPDATE visitas SET enviado = 0 WHERE enviado IS NULL');
+        }
+      } catch (e) {
+        print('Erro ao verificar/adicionar coluna enviado: $e');
+        // Se falhar, tenta recriar a tabela preservando os dados
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS visitas_temp(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            data_visita TEXT,
+            cliente TEXT,
+            contato_cliente TEXT,
+            contato_kluber TEXT,
+            enviado INTEGER DEFAULT 0
+          )
+        ''');
+        
+        // Copia dados existentes
+        await db.execute('''
+          INSERT INTO visitas_temp(id, data_visita, cliente, contato_cliente, contato_kluber)
+          SELECT id, data_visita, cliente, contato_cliente, contato_kluber FROM visitas
+        ''');
+        
+        // Remove tabela antiga
+        await db.execute('DROP TABLE visitas');
+        
+        // Renomeia a nova tabela
+        await db.execute('ALTER TABLE visitas_temp RENAME TO visitas');
+      }
     }
 
     if (!tableNames.contains('prensas')) {
       await db.execute('''
         CREATE TABLE IF NOT EXISTS prensas(
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          tipo_prensa TEXT NOT NULL,
-          fabricante TEXT NOT NULL,
-          comprimento REAL NOT NULL,
-          espessura REAL NOT NULL,
-          produto TEXT NOT NULL,
-          velocidade REAL NOT NULL,
-          produto_cinta TEXT NOT NULL,
-          produto_corrente TEXT NOT NULL,
-          produto_bendroads TEXT NOT NULL,
-          visita_id INTEGER NOT NULL,
+          tipo_prensa TEXT,
+          fabricante TEXT,
+          comprimento REAL,
+          espressura REAL,
+          produto TEXT,
+          velocidade REAL,
+          produto_cinta TEXT,
+          produto_corrente TEXT,
+          produto_bendroads TEXT,
+          visita_id INTEGER,
           FOREIGN KEY (visita_id) REFERENCES visitas (id)
         )
       ''');
@@ -183,15 +264,14 @@ class DatabaseHelper {
       await db.execute('''
         CREATE TABLE IF NOT EXISTS elementos(
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          consumo1 REAL NOT NULL,
-          consumo2 REAL NOT NULL,
-          consumo3 REAL NOT NULL,
-          toma TEXT NOT NULL,
-          posicao TEXT NOT NULL,
-          tipo TEXT NOT NULL,
-          mypress TEXT NOT NULL,
-          prensa_id INTEGER NOT NULL,
-          FOREIGN KEY (prensa_id) REFERENCES prensas (id) ON DELETE CASCADE
+          consumo1 REAL,
+          consumo2 REAL,
+          consumo3 REAL,
+          toma TEXT,
+          posicao TEXT,
+          tipo TEXT,
+          prensa_id INTEGER,
+          FOREIGN KEY (prensa_id) REFERENCES prensas (id)
         )
       ''');
     }
@@ -200,17 +280,17 @@ class DatabaseHelper {
       await db.execute('''
         CREATE TABLE IF NOT EXISTS problemas(
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          problema_redutor_principal INTEGER NOT NULL,
+          problema_redutor_principal TEXT,
           comentario_redutor_principal TEXT,
           lubrificante_redutor_principal TEXT,
-          problema_temperatura INTEGER NOT NULL,
+          problema_temperatura TEXT,
           comentario_temperatura TEXT,
-          problema_tambor_principal INTEGER NOT NULL,
+          problema_tambor_principal TEXT,
           comentario_tambor_principal TEXT,
-          mypress_visita_id INTEGER NOT NULL,
           graxa_rolamentos_zonas_quentes TEXT,
           graxa_tambor_principal TEXT,
-          FOREIGN KEY (mypress_visita_id) REFERENCES visitas (id)
+          visita_id INTEGER,
+          FOREIGN KEY (visita_id) REFERENCES visitas (id)
         )
       ''');
     }
@@ -219,8 +299,8 @@ class DatabaseHelper {
       await db.execute('''
         CREATE TABLE IF NOT EXISTS comentarios_elementos(
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          comentario TEXT NOT NULL,
-          mypress_elemento_id INTEGER NOT NULL,
+          comentario TEXT,
+          mypress_elemento_id INTEGER,
           FOREIGN KEY (mypress_elemento_id) REFERENCES elementos (id) ON DELETE CASCADE
         )
       ''');
@@ -230,28 +310,28 @@ class DatabaseHelper {
       await db.execute('''
         CREATE TABLE IF NOT EXISTS anexos_comentarios(
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          nome TEXT NOT NULL,
-          tipo TEXT NOT NULL,
-          url TEXT NOT NULL,
-          base64 TEXT NOT NULL,
-          mypress_comentario_id INTEGER NOT NULL,
+          nome TEXT,
+          tipo TEXT,
+          url TEXT,
+          base64 TEXT,
+          mypress_comentario_id INTEGER,
           FOREIGN KEY (mypress_comentario_id) REFERENCES comentarios_elementos (id) ON DELETE CASCADE
         )
       ''');
     }
 
-    if (!tableNames.contains('temperaturas_elementos')) {
+    if (!tableNames.contains('temperaturas_prensa')) {
       await db.execute('''
-        CREATE TABLE IF NOT EXISTS temperaturas_elementos(
+        CREATE TABLE IF NOT EXISTS temperaturas_prensa(
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          data_registro TEXT NOT NULL,
+          data_registro TEXT,
           zona1 REAL,
           zona2 REAL,
           zona3 REAL,
           zona4 REAL,
           zona5 REAL,
-          elemento_id INTEGER NOT NULL,
-          FOREIGN KEY (elemento_id) REFERENCES elementos (id) ON DELETE CASCADE
+          prensa_id INTEGER NOT NULL,
+          FOREIGN KEY (prensa_id) REFERENCES prensas (id) ON DELETE CASCADE
         )
       ''');
     }
@@ -272,6 +352,16 @@ class DatabaseHelper {
     final db = await instance.database;
     final id = await db.insert('prensas', prensa.toMap());
     return id;
+  }
+
+  Future<void> updatePrensa(Prensa prensa) async {
+    final db = await instance.database;
+    await db.update(
+      'prensas',
+      prensa.toMap(),
+      where: 'id = ?',
+      whereArgs: [prensa.id],
+    );
   }
 
   Future<List<Prensa>> getPrensasByVisita(int visitaId) async {
@@ -306,11 +396,13 @@ class DatabaseHelper {
 
   Future<List<Problema>> getProblemasByVisita(int visitaId) async {
     final db = await instance.database;
+    print('Buscando problemas para a visita $visitaId');
     final List<Map<String, dynamic>> maps = await db.query(
       'problemas',
-      where: 'mypress_visita_id = ?',
+      where: 'visita_id = ?',
       whereArgs: [visitaId],
     );
+    print('Problemas encontrados: $maps');
     return List.generate(maps.length, (i) => Problema.fromMap(maps[i]));
   }
 
@@ -401,19 +493,31 @@ class DatabaseHelper {
   }
 
   Future<int> createTemperaturaElemento(TemperaturaElemento temperatura) async {
+    print('DatabaseHelper.createTemperaturaElemento iniciado');
+    print('Dados da temperatura: ${temperatura.toMap()}');
     final db = await instance.database;
-    return await db.insert('temperaturas_elementos', temperatura.toMap());
+    print('Banco de dados obtido');
+    try {
+      final id = await db.insert('temperaturas_elementos', temperatura.toMap());
+      print('Temperatura inserida com sucesso. ID: $id');
+      return id;
+    } catch (e) {
+      print('Erro ao inserir temperatura: $e');
+      rethrow;
+    }
   }
 
   Future<List<TemperaturaElemento>> getTemperaturasByElemento(
       int elementoId) async {
     final db = await instance.database;
+    print('Buscando temperaturas para o elemento $elementoId');
     final List<Map<String, dynamic>> maps = await db.query(
       'temperaturas_elementos',
       where: 'elemento_id = ?',
       whereArgs: [elementoId],
       orderBy: 'data_registro DESC',
     );
+    print('Temperaturas encontradas: $maps');
     return List.generate(
         maps.length, (i) => TemperaturaElemento.fromMap(maps[i]));
   }
@@ -480,5 +584,98 @@ class DatabaseHelper {
     }
 
     return Visita.fromMap(maps.first);
+  }
+
+  Future<int> createTemperaturaPrensa(TemperaturaPrensa temperatura) async {
+    print('DatabaseHelper.createTemperaturaPrensa iniciado');
+    print('Dados da temperatura: ${temperatura.toMap()}');
+    final db = await instance.database;
+    print('Banco de dados obtido');
+    try {
+      final id = await db.insert('temperaturas_prensa', temperatura.toMap());
+      print('Temperatura inserida com sucesso. ID: $id');
+      return id;
+    } catch (e) {
+      print('Erro ao inserir temperatura: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<TemperaturaPrensa>> getTemperaturasByPrensa(int prensaId) async {
+    final db = await instance.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'temperaturas_prensa',
+      where: 'prensa_id = ?',
+      whereArgs: [prensaId],
+      orderBy: 'data_registro DESC',
+    );
+    return List.generate(maps.length, (i) => TemperaturaPrensa.fromMap(maps[i]));
+  }
+
+  Future<int> deleteTemperaturaPrensa(int temperaturaId) async {
+    final db = await instance.database;
+    return await db.delete(
+      'temperaturas_prensa',
+      where: 'id = ?',
+      whereArgs: [temperaturaId],
+    );
+  }
+
+  Future<int> updateTemperaturaPrensa(TemperaturaPrensa temperatura) async {
+    final db = await instance.database;
+    return await db.update(
+      'temperaturas_prensa',
+      temperatura.toMap(),
+      where: 'id = ?',
+      whereArgs: [temperatura.id],
+    );
+  }
+
+  Future<List<Prensa>> getAllPrensas() async {
+    final db = await instance.database;
+    final List<Map<String, dynamic>> maps = await db.query('prensas');
+    return List.generate(maps.length, (i) => Prensa.fromMap(maps[i]));
+  }
+
+  Future<int> deletePrensa(int prensaId) async {
+    final db = await instance.database;
+    
+    try {
+      // Usar transação para garantir que todas as operações sejam executadas ou nenhuma
+      return await db.transaction((txn) async {
+        // Primeiro, excluir as temperaturas da prensa
+        await txn.delete(
+          'temperaturas_prensa',
+          where: 'prensa_id = ?',
+          whereArgs: [prensaId],
+        );
+
+        // Depois, excluir os elementos da prensa
+        await txn.delete(
+          'elementos',
+          where: 'prensa_id = ?',
+          whereArgs: [prensaId],
+        );
+
+        // Por fim, excluir a prensa
+        return await txn.delete(
+          'prensas',
+          where: 'id = ?',
+          whereArgs: [prensaId],
+        );
+      });
+    } catch (e) {
+      print('Erro ao excluir prensa: $e');
+      rethrow;
+    }
+  }
+
+  Future<int> deleteProblema(int id) async {
+    final db = await instance.database;
+    return await db.delete(
+      'problemas',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 }

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:mypress/views/cadastro_problema_screen.dart';
 import '../models/prensa_model.dart';
+import '../models/temperatura_prensa_model.dart';
 import '../database/database_helper.dart';
 import 'cadastro_prensa_screen.dart';
 import '../models/elemento_model.dart';
 import 'selecionar_elemento_screen.dart';
 import '../models/problema_model.dart';
+import 'cadastro_temperatura_screen.dart';
 
 class SelecionarCadastroScreen extends StatefulWidget {
   final int visitaId;
@@ -32,32 +34,39 @@ class _SelecionarCadastroScreenState extends State<SelecionarCadastroScreen> {
   }
 
   Future<void> _carregarDados() async {
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
-      final prensas =
-          await DatabaseHelper.instance.getPrensasByVisita(widget.visitaId);
+      final prensas = await DatabaseHelper.instance.getPrensasByVisita(widget.visitaId);
 
       // Carregar elementos para cada prensa
       final elementosPorPrensa = <int, List<Elemento>>{};
       for (var prensa in prensas) {
         if (prensa.id != null) {
-          final elementos =
-              await DatabaseHelper.instance.getElementsByPrensa(prensa.id!);
+          final elementos = await DatabaseHelper.instance.getElementsByPrensa(prensa.id!);
           elementosPorPrensa[prensa.id!] = elementos;
         }
       }
 
-      setState(() {
-        _prensas = prensas;
-        _elementosPorPrensa = elementosPorPrensa;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
       if (mounted) {
+        setState(() {
+          _prensas = prensas;
+          _elementosPorPrensa = elementosPorPrensa;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Erro ao carregar dados')),
+          SnackBar(
+            content: Text('Erro ao carregar dados: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -106,8 +115,8 @@ class _SelecionarCadastroScreenState extends State<SelecionarCadastroScreen> {
                     const SizedBox(height: 16),
                     _buildOptionCard(
                       context,
-                      title: 'Novo Problema',
-                      description: 'Registre um problema identificado',
+                      title: 'Inspeção de Graxa',
+                      description: 'Registre uma inspeção de graxa',
                       icon: Icons.warning_rounded,
                       onTap: () {
                         Navigator.push(
@@ -117,17 +126,31 @@ class _SelecionarCadastroScreenState extends State<SelecionarCadastroScreen> {
                                 visitaId: widget.visitaId),
                           ),
                         );
-                        // TODO: Implementar navegação para cadastro de problema
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                                'Cadastro de problemas em desenvolvimento'),
-                          ),
-                        );
                       },
                     ),
-                    if (_prensas.isNotEmpty) ...[
-                      const SizedBox(height: 24),
+                    const SizedBox(height: 16),
+                    if (_prensas.isEmpty)
+                      Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.warning,
+                              color: Color(0xFFFABA00),
+                              size: 48,
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Nenhuma prensa cadastrada',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else ...[
                       const Text(
                         'Prensas Cadastradas',
                         style: TextStyle(
@@ -142,181 +165,221 @@ class _SelecionarCadastroScreenState extends State<SelecionarCadastroScreen> {
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: _prensas.length,
                         itemBuilder: (context, index) {
-                          return _buildPrensaCard(_prensas[index]);
+                          final prensa = _prensas[index];
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            color: Colors.grey[900],
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: BorderSide(
+                                color: const Color(0xFFFABA00).withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: InkWell(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => CadastroTemperaturaScreen(
+                                      prensaId: prensa.id!,
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFFABA00)
+                                                .withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: const Icon(
+                                            Icons.precision_manufacturing,
+                                            color: Color(0xFFFABA00),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                prensa.tipoPrensa,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              Text(
+                                                'Fabricante: ${prensa.fabricante}',
+                                                style: TextStyle(
+                                                  color: Colors.grey[400],
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const Icon(
+                                          Icons.thermostat,
+                                          color: Color(0xFFFABA00),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.settings,
+                                            color: Color(0xFFFABA00),
+                                          ),
+                                          onPressed: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => SelecionarElementoScreen(
+                                                  prensaId: prensa.id!,
+                                                  visitaId: widget.visitaId,
+                                                ),
+                                              ),
+                                            ).then((value) {
+                                              if (value == true) {
+                                                _carregarDados();
+                                              }
+                                            });
+                                          },
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.edit,
+                                            color: Color(0xFFFABA00),
+                                          ),
+                                          onPressed: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => CadastroPrensaScreen(
+                                                  visitaId: widget.visitaId,
+                                                  prensa: prensa,
+                                                ),
+                                              ),
+                                            ).then((value) {
+                                              if (value == true) {
+                                                _carregarDados();
+                                              }
+                                            });
+                                          },
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.delete_outline,
+                                            color: Colors.red,
+                                          ),
+                                          onPressed: () => _confirmarExclusao(prensa),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 16),
+                                    FutureBuilder<List<TemperaturaPrensa>>(
+                                      future: DatabaseHelper.instance.getTemperaturasByPrensa(prensa.id!),
+                                      builder: (context, snapshot) {
+                                        if (snapshot.connectionState == ConnectionState.waiting) {
+                                          return const Center(
+                                            child: SizedBox(
+                                              width: 20,
+                                              height: 20,
+                                              child: CircularProgressIndicator(
+                                                color: Color(0xFFFABA00),
+                                                strokeWidth: 2,
+                                              ),
+                                            ),
+                                          );
+                                        }
+
+                                        final temperaturas = snapshot.data ?? [];
+
+                                        if (temperaturas.isEmpty) {
+                                          return Container(
+                                            padding: const EdgeInsets.all(8),
+                                            decoration: BoxDecoration(
+                                              color: Colors.grey[850],
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: const Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.info_outline,
+                                                  color: Colors.grey,
+                                                  size: 16,
+                                                ),
+                                                SizedBox(width: 8),
+                                                Text(
+                                                  'Nenhuma temperatura registrada',
+                                                  style: TextStyle(
+                                                    color: Colors.grey,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        }
+
+                                        return Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: temperaturas.take(3).map((temp) {
+                                            return Padding(
+                                              padding: const EdgeInsets.only(bottom: 4),
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    'Data: ${temp?.dataRegistro ?? '-'}',
+                                                    style: const TextStyle(
+                                                      color: Colors.grey,
+                                                      fontSize: 12,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  Row(
+                                                    children: [
+                                                      _buildTemperaturaItem('Z1', temp?.zona1),
+                                                      _buildTemperaturaItem('Z2', temp?.zona2),
+                                                      _buildTemperaturaItem('Z3', temp?.zona3),
+                                                      _buildTemperaturaItem('Z4', temp?.zona4),
+                                                      _buildTemperaturaItem('Z5', temp?.zona5),
+                                                    ],
+                                                  ),
+                                                  if (temperaturas.last != temp)
+                                                    const Divider(height: 8, color: Colors.grey),
+                                                ],
+                                              ),
+                                            );
+                                          }).toList(),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
                         },
                       ),
                     ],
                     const SizedBox(height: 32),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 55,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.of(context)
-                              .popUntil((route) => route.isFirst);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey[900],
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text(
-                          'FINALIZAR',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
                     _buildProblemasList(widget.visitaId),
                   ],
                 ),
               ),
             ),
-    );
-  }
-
-  Widget _buildPrensaCard(Prensa prensa) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      color: Colors.grey[900],
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: const Color(0xFFFABA00).withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFABA00).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.precision_manufacturing,
-                    color: Color(0xFFFABA00),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        prensa.tipoPrensa,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        'Fabricante: ${prensa.fabricante}',
-                        style: TextStyle(
-                          color: Colors.grey[400],
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => SelecionarElementoScreen(
-                          prensaId: prensa.id!,
-                          visitaId: widget.visitaId,
-                        ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(
-                    Icons.settings,
-                    color: Color(0xFFFABA00),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                _buildInfoItem(
-                  'Comprimento',
-                  '${prensa.comprimento} m',
-                  Icons.straighten,
-                ),
-                const SizedBox(width: 16),
-                _buildInfoItem(
-                  'Espessura',
-                  '${prensa.espessura} mm',
-                  Icons.height,
-                ),
-                const SizedBox(width: 16),
-                _buildInfoItem(
-                  'Velocidade',
-                  '${prensa.velocidade} m/min',
-                  Icons.speed,
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoItem(String label, String value, IconData icon) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 200),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 14,
-                color: const Color(0xFFFABA00),
-              ),
-              const SizedBox(width: 4),
-              Flexible(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    color: Colors.grey[400],
-                    fontSize: 12,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 14,
-          ),
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
     );
   }
 
@@ -401,79 +464,155 @@ class _SelecionarCadastroScreenState extends State<SelecionarCadastroScreen> {
           );
         }
 
-        final problemas = snapshot.data ?? [];
-
-        if (problemas.isEmpty) {
-          return Container();
+        if (snapshot.hasError) {
+          print('Erro ao carregar problemas: ${snapshot.error}');
+          return Center(
+            child: Text(
+              'Erro ao carregar problemas: ${snapshot.error}',
+              style: const TextStyle(color: Colors.red),
+            ),
+          );
         }
 
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          color: Colors.grey[900],
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(
-              color: const Color(0xFFFABA00).withOpacity(0.3),
-              width: 1,
+        final problemas = snapshot.data ?? [];
+     
+
+        if (problemas.isEmpty) {
+          return Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            color: Colors.grey[900],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(
+                color: const Color(0xFFFABA00).withOpacity(0.3),
+                width: 1,
+              ),
             ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Problemas Identificados',
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Inspeção de Graxa Relatados',
+                    style: TextStyle(
+                      color: Color(0xFFFABA00),
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Center(
+                    child: Text(
+                      'Nenhum problema registrado',
                       style: TextStyle(
-                        color: Color(0xFFFABA00),
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                        color: Colors.grey,
+                        fontSize: 14,
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.edit,
-                        color: Color(0xFFFABA00),
-                        size: 20,
-                      ),
-                      constraints: const BoxConstraints(),
-                      padding: const EdgeInsets.all(8),
-                      onPressed: () =>
-                          _editarProblema(visitaId, problemas.first),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return Column(
+          children: problemas.map((problema) {
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              color: Colors.grey[900],
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(
+                  color: const Color(0xFFFABA00).withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Inspeção de Graxa',
+                          style: TextStyle(
+                            color: Color(0xFFFABA00),
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(
+                                Icons.edit,
+                                color: Color(0xFFFABA00),
+                                size: 20,
+                              ),
+                              constraints: const BoxConstraints(),
+                              padding: const EdgeInsets.all(8),
+                              onPressed: () => _editarProblema(visitaId, problema),
+                            ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.delete,
+                                color: Colors.red,
+                                size: 20,
+                              ),
+                              constraints: const BoxConstraints(),
+                              padding: const EdgeInsets.all(8),
+                              onPressed: () => _confirmarExclusaoProblema(problema),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
+                    const SizedBox(height: 16),
+                    _buildProblemaItem(
+                      'Redutor Principal',
+                      problema.problemaRedutorPrincipal == '1',
+                      problema.comentarioRedutorPrincipal,
+                      problema.lubrificanteRedutorPrincipal,
+                    ),
+                    const Divider(color: Colors.grey),
+                    _buildProblemaItem(
+                      'Temperatura',
+                      problema.problemaTemperatura == '1',
+                      problema.comentarioTemperatura,
+                      null,
+                    ),
+                    const Divider(color: Colors.grey),
+                    _buildProblemaItem(
+                      'Tambor Principal',
+                      problema.problemaTamborPrincipal == '1',
+                      problema.comentarioTamborPrincipal,
+                      problema.graxaTamborPrincipal,
+                    ),
+                    if (problema.graxaRolamentosZonasQuentes != null) ...[
+                      const Divider(color: Colors.grey),
+                      _buildProblemaItem(
+                        'Graxa Rolamentos Zonas Quentes',
+                        true,
+                        null,
+                        problema.graxaRolamentosZonasQuentes,
+                      ),
+                    ],
                   ],
                 ),
-                const SizedBox(height: 16),
-                _buildProblemaItem(
-                  'Redutor Principal',
-                  problemas.first.problemaRedutorPrincipal == 1,
-                  problemas.first.comentarioRedutorPrincipal,
-                ),
-                const Divider(color: Colors.grey),
-                _buildProblemaItem(
-                  'Temperatura',
-                  problemas.first.problemaTemperatura == 1,
-                  problemas.first.comentarioTemperatura,
-                ),
-                const Divider(color: Colors.grey),
-                _buildProblemaItem(
-                  'Tambor Principal',
-                  problemas.first.problemaTamborPrincipal == 1,
-                  problemas.first.comentarioTamborPrincipal,
-                ),
-              ],
-            ),
-          ),
+              ),
+            );
+          }).toList(),
         );
       },
     );
   }
 
   Widget _buildProblemaItem(
-      String titulo, bool temProblema, String? comentario) {
+      String titulo, bool temProblema, String? comentario, String? produto) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -508,6 +647,19 @@ class _SelecionarCadastroScreenState extends State<SelecionarCadastroScreen> {
             ),
           ),
         ],
+        if (produto != null) ...[
+          const SizedBox(height: 4),
+          Padding(
+            padding: const EdgeInsets.only(left: 24),
+            child: Text(
+              'Produto: $produto',
+              style: TextStyle(
+                color: Colors.grey[400],
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -523,10 +675,133 @@ class _SelecionarCadastroScreenState extends State<SelecionarCadastroScreen> {
       ),
     ).then((value) {
       if (value == true) {
-        setState(() {
-          _carregarDados();
-        });
+        setState(() {});
       }
     });
+  }
+
+  Widget _buildTemperaturaItem(String zona, double? temperatura) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '$zona:',
+                style: const TextStyle(
+                  color: Colors.grey,
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(width: 2),
+              Text(
+                temperatura?.toStringAsFixed(1) ?? '-',
+                style: TextStyle(
+                  color: temperatura != null ? Colors.white : Colors.grey,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              if (temperatura != null)
+                const Text(
+                  '°C',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 12,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _confirmarExclusao(Prensa prensa) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Text(
+          'Excluir Prensa',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          'Deseja realmente excluir a prensa ${prensa.tipoPrensa}?\nEsta ação não pode ser desfeita.',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancelar',
+              style: TextStyle(color: Colors.grey[400]),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              try {
+                await DatabaseHelper.instance.deletePrensa(prensa.id!);
+                if (mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Prensa excluída com sucesso!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                  _carregarDados();
+                }
+              } catch (e) {
+                if (mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Erro ao excluir prensa: ${e.toString()}'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text(
+              'Excluir',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmarExclusaoProblema(Problema problema) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Excluir Problema'),
+          content: const Text('Você tem certeza que deseja excluir este problema?'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancelar'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('Excluir'),
+              onPressed: () async {
+                await DatabaseHelper.instance.deleteProblema(problema.id!);
+                Navigator.of(context).pop();
+                setState(() {});
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 }

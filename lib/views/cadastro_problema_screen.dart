@@ -75,11 +75,11 @@ class _CadastroProblemaScreenState extends State<CadastroProblemaScreen> {
       try {
         final problema = Problema(
           id: widget.problema?.id,
-          problemaRedutorPrincipal: _problemaRedutorPrincipal ? 1 : 0,
+          problemaRedutorPrincipal: _problemaRedutorPrincipal ? '1' : '0',
           comentarioRedutorPrincipal: _comentarioRedutorController.text,
-          problemaTemperatura: _problemaTemperatura ? 1 : 0,
+          problemaTemperatura: _problemaTemperatura ? '1' : '0',
           comentarioTemperatura: _comentarioTemperaturaController.text,
-          problemaTamborPrincipal: _problemaTamborPrincipal ? 1 : 0,
+          problemaTamborPrincipal: _problemaTamborPrincipal ? '1' : '0',
           comentarioTamborPrincipal: _comentarioTamborController.text,
           lubrificanteRedutorPrincipal: _lubrificanteSelecionado,
           graxaRolamentosZonasQuentes: _graxaRolamentosSelecionada,
@@ -87,24 +87,26 @@ class _CadastroProblemaScreenState extends State<CadastroProblemaScreen> {
           myPressVisitaId: widget.visitaId,
         );
 
+        print('Salvando problema: ${problema.toMap()}');
         if (widget.problema != null) {
           await DatabaseHelper.instance.updateProblema(problema);
+          print('Problema atualizado com sucesso');
         } else {
-          await DatabaseHelper.instance.createProblema(problema);
+          final id = await DatabaseHelper.instance.createProblema(problema);
+          print('Problema criado com ID: $id');
         }
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(widget.problema != null
-                  ? 'Problema atualizado com sucesso!'
-                  : 'Problema cadastrado com sucesso!'),
+            const SnackBar(
+              content: Text('Problema salvo com sucesso!'),
               backgroundColor: Colors.green,
             ),
           );
           Navigator.pop(context, true);
         }
       } catch (e) {
+        print('Erro ao salvar problema: $e');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -130,7 +132,7 @@ class _CadastroProblemaScreenState extends State<CadastroProblemaScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         title: const Text(
-          'Cadastrar Problemas',
+          'Inspeção de Graxa',
           style: TextStyle(color: Color(0xFFFABA00)),
         ),
         iconTheme: const IconThemeData(color: Color(0xFFFABA00)),
@@ -274,7 +276,7 @@ class _CadastroProblemaScreenState extends State<CadastroProblemaScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Temperatura',
+                        'Zona Quente',
                         style: TextStyle(
                           color: Color(0xFFFABA00),
                           fontSize: 18,
@@ -317,7 +319,7 @@ class _CadastroProblemaScreenState extends State<CadastroProblemaScreen> {
                       Row(
                         children: [
                           const Text(
-                            'Problema de temperatura',
+                            'Problema na zona quente',
                             style: TextStyle(color: Colors.white),
                           ),
                           const Spacer(),

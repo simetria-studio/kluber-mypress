@@ -224,16 +224,16 @@ class _ListaVisitasScreenState extends State<ListaVisitasScreen> {
           await DatabaseHelper.instance.getPrensasByVisita(visita.id!);
       for (var prensa in prensas) {
         final novaPrensa = Prensa(
+          visitaId: novaVisitaId,
           tipoPrensa: prensa.tipoPrensa,
           fabricante: prensa.fabricante,
           comprimento: prensa.comprimento,
-          espessura: prensa.espessura,
+          espressura: prensa.espressura,
           produto: prensa.produto,
           velocidade: prensa.velocidade,
           produtoCinta: prensa.produtoCinta,
           produtoCorrente: prensa.produtoCorrente,
           produtoBendroads: prensa.produtoBendroads,
-          visitaId: novaVisitaId,
         );
 
         final novaPrensaId =
@@ -249,7 +249,7 @@ class _ListaVisitasScreenState extends State<ListaVisitasScreen> {
             toma: elemento.toma,
             posicao: elemento.posicao,
             tipo: elemento.tipo,
-            mypress: elemento.mypress,
+
             prensaId: novaPrensaId,
           );
           await DatabaseHelper.instance.createElemento(novoElemento);

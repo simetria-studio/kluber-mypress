@@ -22,7 +22,6 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
   final _tomaController = TextEditingController();
   final _posicaoController = TextEditingController();
   final _tipoController = TextEditingController();
-  final _mypressController = TextEditingController();
 
   // Adicione esta lista de tipos de elementos
   final List<String> _tiposElementos = [
@@ -36,18 +35,43 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
   final List<String> _posicoes = ['Superior', 'Inferior'];
   String? _posicaoSelecionada;
 
+  @override
+  void initState() {
+    super.initState();
+    _consumo2Controller.addListener(_calcularSoma);
+    _consumo3Controller.addListener(_calcularSoma);
+  }
+
+  void _calcularSoma() {
+    try {
+      final consumo2 = double.tryParse(_consumo2Controller.text) ?? 0;
+      final consumo3 = double.tryParse(_consumo3Controller.text) ?? 0;
+      final soma = consumo2 + consumo3;
+      _tomaController.text = soma.toString();
+    } catch (e) {
+      _tomaController.text = '';
+    }
+  }
+
   void _salvarElemento() async {
     if (_formKey.currentState!.validate()) {
       try {
+        // Verificar se os campos obrigatórios estão preenchidos
+        if (_tipoElementoSelecionado == null) {
+          throw Exception('Por favor, selecione o tipo do elemento');
+        }
+
+        if (_tipoElementoSelecionado != 'Bend rods' && _posicaoSelecionada == null) {
+          throw Exception('Por favor, selecione a posição');
+        }
+
         final elemento = Elemento(
           consumo1: double.parse(_consumo1Controller.text),
           consumo2: double.parse(_consumo2Controller.text),
           consumo3: double.parse(_consumo3Controller.text),
           toma: _tomaController.text,
-          posicao:
-              _posicaoSelecionada!, // Atualizado para usar o valor selecionado
+          posicao: _posicaoSelecionada ?? 'N/A', // Usar 'N/A' como valor padrão para Bend rods
           tipo: _tipoElementoSelecionado!,
-          mypress: _mypressController.text,
           prensaId: widget.prensaId,
         );
 
@@ -59,9 +83,10 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
           Navigator.pop(context, true);
         }
       } catch (e) {
+        print(e);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Erro ao cadastrar elemento')),
+            SnackBar(content: Text(e.toString())),
           );
         }
       }
@@ -87,94 +112,6 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
             key: _formKey,
             child: Column(
               children: [
-                TextFormField(
-                  controller: _consumo1Controller,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Consumo 1',
-                    prefixIcon: Icon(Icons.speed, color: Color(0xFFFABA00)),
-                    suffixText: 'g/h',
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) =>
-                      value?.isEmpty ?? true ? 'Campo obrigatório' : null,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _consumo2Controller,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Consumo 2',
-                    prefixIcon: Icon(Icons.speed, color: Color(0xFFFABA00)),
-                    suffixText: 'g/h',
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) =>
-                      value?.isEmpty ?? true ? 'Campo obrigatório' : null,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _consumo3Controller,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Consumo 3',
-                    prefixIcon: Icon(Icons.speed, color: Color(0xFFFABA00)),
-                    suffixText: 'g/h',
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) =>
-                      value?.isEmpty ?? true ? 'Campo obrigatório' : null,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _tomaController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Soma',
-                    prefixIcon: Icon(Icons.settings_input_component,
-                        color: Color(0xFFFABA00)),
-                  ),
-                  validator: (value) =>
-                      value?.isEmpty ?? true ? 'Campo obrigatório' : null,
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  value: _posicaoSelecionada,
-                  decoration: const InputDecoration(
-                    labelText: 'Posição',
-                    labelStyle: TextStyle(color: Colors.white),
-                    prefixIcon: Icon(Icons.place, color: Color(0xFFFABA00)),
-                    enabledBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: Colors.grey),
-                    ),
-                    focusedBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFFFABA00)),
-                    ),
-                    border: UnderlineInputBorder(),
-                  ),
-                  icon: const Icon(Icons.arrow_drop_down,
-                      color: Color(0xFFFABA00)),
-                  dropdownColor: Colors.grey[900],
-                  style: const TextStyle(color: Colors.white),
-                  items: _posicoes.map((String posicao) {
-                    return DropdownMenuItem<String>(
-                      value: posicao,
-                      child: Text(posicao),
-                    );
-                  }).toList(),
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      _posicaoSelecionada = newValue;
-                    });
-                  },
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Por favor, selecione a posição';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   value: _tipoElementoSelecionado,
                   decoration: const InputDecoration(
@@ -202,6 +139,9 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
                   onChanged: (String? newValue) {
                     setState(() {
                       _tipoElementoSelecionado = newValue;
+                      if (newValue != 'Bend rods') {
+                        _posicaoSelecionada = null;
+                      }
                     });
                   },
                   validator: (value) {
@@ -212,14 +152,94 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
+                Visibility(
+                  visible: _tipoElementoSelecionado != 'Bend rods',
+                  child: DropdownButtonFormField<String>(
+                    value: _posicaoSelecionada,
+                    decoration: const InputDecoration(
+                      labelText: 'Posição',
+                      labelStyle: TextStyle(color: Colors.white),
+                      prefixIcon: Icon(Icons.place, color: Color(0xFFFABA00)),
+                      enabledBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: Colors.grey),
+                      ),
+                      focusedBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: Color(0xFFFABA00)),
+                      ),
+                      border: UnderlineInputBorder(),
+                    ),
+                    icon: const Icon(Icons.arrow_drop_down,
+                        color: Color(0xFFFABA00)),
+                    dropdownColor: Colors.grey[900],
+                    style: const TextStyle(color: Colors.white),
+                    items: _posicoes.map((String posicao) {
+                      return DropdownMenuItem<String>(
+                        value: posicao,
+                        child: Text(posicao),
+                      );
+                    }).toList(),
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        _posicaoSelecionada = newValue;
+                      });
+                    },
+                    validator: (value) {
+                      if (_tipoElementoSelecionado != 'Bend rods' && (value == null || value.isEmpty)) {
+                        return 'Por favor, selecione a posição';
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
                 TextFormField(
-                  controller: _mypressController,
+                  controller: _consumo1Controller,
                   style: const TextStyle(color: Colors.white),
                   decoration: const InputDecoration(
-                    labelText: 'MyPress',
-                    prefixIcon: Icon(Icons.precision_manufacturing,
+                    labelText: 'Consumo Nominal',
+                    prefixIcon: Icon(Icons.speed, color: Color(0xFFFABA00)),
+                    suffixText: 'g/h',
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: (value) =>
+                      value?.isEmpty ?? true ? 'Campo obrigatório' : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _consumo2Controller,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    labelText: 'Consumo Real',
+                    prefixIcon: Icon(Icons.speed, color: Color(0xFFFABA00)),
+                    suffixText: 'g/h',
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: (value) =>
+                      value?.isEmpty ?? true ? 'Campo obrigatório' : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _consumo3Controller,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    labelText: 'Consumo Real Adicional',
+                    prefixIcon: Icon(Icons.speed, color: Color(0xFFFABA00)),
+                    suffixText: 'g/h',
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: (value) =>
+                      value?.isEmpty ?? true ? 'Campo obrigatório' : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _tomaController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    labelText: 'Soma',
+                    prefixIcon: Icon(Icons.settings_input_component,
                         color: Color(0xFFFABA00)),
                   ),
+                  enabled: false,
                   validator: (value) =>
                       value?.isEmpty ?? true ? 'Campo obrigatório' : null,
                 ),
@@ -255,13 +275,14 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
 
   @override
   void dispose() {
+    _consumo2Controller.removeListener(_calcularSoma);
+    _consumo3Controller.removeListener(_calcularSoma);
     _consumo1Controller.dispose();
     _consumo2Controller.dispose();
     _consumo3Controller.dispose();
     _tomaController.dispose();
     _posicaoController.dispose();
     _tipoController.dispose();
-    _mypressController.dispose();
     super.dispose();
   }
 }

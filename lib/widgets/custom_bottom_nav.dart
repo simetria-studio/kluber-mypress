@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mypress/views/home_screen.dart';
 import '../views/perfil_screen.dart';
+import '../views/cadastro_visita_screen.dart';
+import '../views/gerenciar_temperaturas_screen.dart';
 
 class CustomBottomNav extends StatelessWidget {
   final int currentIndex;
@@ -16,93 +18,95 @@ class CustomBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 100, // Aumentado para 90
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.black,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
       child: Stack(
         children: [
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Container(
-              height: 70, // Aumentado para 70
-              decoration: BoxDecoration(
-                color: Colors.black,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, -5),
+          BottomNavigationBar(
+            currentIndex: currentIndex,
+            onTap: (index) {
+              if (index == 4) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const PerfilScreen()),
+                );
+              } else if (index == 0) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const HomeScreen()),
+                );
+              } else if (index == 1) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const GerenciarTemperaturasScreen(),
                   ),
-                ],
+                );
+              } else if (index == 2) {
+                onAddVisitPressed();
+              } else {
+                onTap(index);
+              }
+            },
+            backgroundColor: Colors.black,
+            selectedItemColor: const Color(0xFFFABA00),
+            unselectedItemColor: Colors.grey,
+            type: BottomNavigationBarType.fixed,
+            showSelectedLabels: true,
+            showUnselectedLabels: true,
+            selectedFontSize: 10,
+            unselectedFontSize: 10,
+            selectedIconTheme: const IconThemeData(size: 22),
+            unselectedIconTheme: const IconThemeData(size: 22),
+            elevation: 0,
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.home_outlined),
+                activeIcon: Icon(Icons.home),
+                label: 'Home',
               ),
-              child: BottomNavigationBar(
-                currentIndex: currentIndex,
-                onTap: (index) {
-                  if (index == 4) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const PerfilScreen()),
-                    );
-                  } else if (index == 0) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const HomeScreen()),
-                    );
-                  } else {
-                    onTap(index);
-                  }
-                },
-                backgroundColor: Colors.black,
-                selectedItemColor: const Color(0xFFFABA00),
-                unselectedItemColor: Colors.grey,
-                type: BottomNavigationBarType.fixed,
-                showSelectedLabels: true,
-                showUnselectedLabels: true,
-                selectedFontSize: 12,
-                unselectedFontSize: 12,
-                items: const [
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.home_outlined),
-                    activeIcon: Icon(Icons.home),
-                    label: 'Home',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.location_on_outlined),
-                    activeIcon: Icon(Icons.location_on),
-                    label: 'Visitas',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: SizedBox(height: 30), // Aumentado para 30
-                    label: '',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.settings_outlined),
-                    activeIcon: Icon(Icons.settings),
-                    label: 'Configurações',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.person_outline),
-                    activeIcon: Icon(Icons.person),
-                    label: 'Perfil',
-                  ),
-                ],
+              BottomNavigationBarItem(
+                icon: Icon(Icons.thermostat),
+                label: 'Temperaturas',
               ),
-            ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.add),
+                label: 'Nova Visita',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.settings_outlined),
+                activeIcon: Icon(Icons.settings),
+                label: 'Configurações',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person_outline),
+                activeIcon: Icon(Icons.person),
+                label: 'Perfil',
+              ),
+            ],
           ),
           // Botão central flutuante
           Positioned(
-            bottom: 35, // Aumentado para 35
+            bottom: 25,
             left: 0,
             right: 0,
             child: GestureDetector(
               onTap: onAddVisitPressed,
               child: Center(
                 child: Container(
-                  height: 60,
-                  width: 60,
+                  height: 45,
+                  width: 45,
                   decoration: BoxDecoration(
                     color: const Color(0xFFFABA00),
                     shape: BoxShape.circle,
@@ -117,7 +121,7 @@ class CustomBottomNav extends StatelessWidget {
                   child: const Icon(
                     Icons.add,
                     color: Colors.black,
-                    size: 35,
+                    size: 25,
                   ),
                 ),
               ),

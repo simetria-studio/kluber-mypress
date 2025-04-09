@@ -6,7 +6,6 @@ class Elemento {
   final String toma;
   final String posicao;
   final String tipo;
-  final String mypress;
   final int prensaId;
 
   Elemento({
@@ -17,7 +16,6 @@ class Elemento {
     required this.toma,
     required this.posicao,
     required this.tipo,
-    required this.mypress,
     required this.prensaId,
   });
 
@@ -30,7 +28,6 @@ class Elemento {
       'toma': toma,
       'posicao': posicao,
       'tipo': tipo,
-      'mypress': mypress,
       'prensa_id': prensaId,
     };
   }
@@ -44,7 +41,6 @@ class Elemento {
       toma: map['toma'],
       posicao: map['posicao'],
       tipo: map['tipo'],
-      mypress: map['mypress'],
       prensaId: map['prensa_id'],
     );
   }

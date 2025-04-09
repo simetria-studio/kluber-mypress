@@ -63,22 +63,19 @@ class _VisitasPendentesScreenState extends State<VisitasPendentesScreen> {
 
       // Preparar dados para envio
       final dadosVisita = {
-        'visita': visita.toMap(),
-        'prensas': await Future.wait(
-          prensas.map((prensa) async {
-            final elementos =
-                await DatabaseHelper.instance.getElementsByPrensa(prensa.id!);
-            return {
-              'prensa': prensa.toMap(),
-              'elementos': await Future.wait(
-                elementos.map((elemento) async {
-                  final comentarios = await DatabaseHelper.instance
-                      .getComentariosByElemento(elemento.id!);
-                  final temperaturas = await DatabaseHelper.instance
-                      .getTemperaturasByElemento(elemento.id!);
-                  return {
-                    'elemento': elemento.toMap(),
-                    'comentarios': await Future.wait(
+        'request': {
+          'visita': visita.toMap(),
+          'prensas': await Future.wait(
+            prensas.map((prensa) async {
+              return {
+                'prensa': prensa.toMap(),
+                'temperaturas': (await DatabaseHelper.instance.getTemperaturasByPrensa(prensa.id!)).map((t) => t.toMap()).toList(),
+                'elementos': await Future.wait(
+                  (await DatabaseHelper.instance.getElementsByPrensa(prensa.id!)).map((elemento) async {
+                    final comentarios = await DatabaseHelper.instance
+                        .getComentariosByElemento(elemento.id!);
+
+                    final comentariosFormatados = await Future.wait(
                       comentarios.map((comentario) async {
                         final anexos = await DatabaseHelper.instance
                             .getAnexosByComentario(comentario.id!);
@@ -87,16 +84,22 @@ class _VisitasPendentesScreenState extends State<VisitasPendentesScreen> {
                           'anexos': anexos.map((a) => a.toMap()).toList(),
                         };
                       }),
-                    ),
-                    'temperaturas': temperaturas.map((t) => t.toMap()).toList(),
-                  };
-                }),
-              ),
-            };
-          }),
-        ),
-        'problemas': problemas.map((p) => p.toMap()).toList(),
+                    );
+
+                    return {
+                      'elemento': elemento.toMap(),
+                      'comentarios': comentariosFormatados,
+                    };
+                  }),
+                ),
+              };
+            }),
+          ),
+          'problemas': problemas.map((p) => p.toMap()).toList(),
+        }
       };
+
+      print('Enviando visita: $dadosVisita');
 
       // Enviar para a API e aguardar resposta
       final response = await ApiService.enviarVisita(dadosVisita);
@@ -144,22 +147,19 @@ class _VisitasPendentesScreenState extends State<VisitasPendentesScreen> {
 
         // Preparar dados para envio
         final dadosVisita = {
-          'visita': visita.toMap(),
-          'prensas': await Future.wait(
-            prensas.map((prensa) async {
-              final elementos =
-                  await DatabaseHelper.instance.getElementsByPrensa(prensa.id!);
-              return {
-                'prensa': prensa.toMap(),
-                'elementos': await Future.wait(
-                  elementos.map((elemento) async {
-                    final comentarios = await DatabaseHelper.instance
-                        .getComentariosByElemento(elemento.id!);
-                    final temperaturas = await DatabaseHelper.instance
-                        .getTemperaturasByElemento(elemento.id!);
-                    return {
-                      'elemento': elemento.toMap(),
-                      'comentarios': await Future.wait(
+          'request': {
+            'visita': visita.toMap(),
+            'prensas': await Future.wait(
+              prensas.map((prensa) async {
+                return {
+                  'prensa': prensa.toMap(),
+                  'temperaturas': (await DatabaseHelper.instance.getTemperaturasByPrensa(prensa.id!)).map((t) => t.toMap()).toList(),
+                  'elementos': await Future.wait(
+                    (await DatabaseHelper.instance.getElementsByPrensa(prensa.id!)).map((elemento) async {
+                      final comentarios = await DatabaseHelper.instance
+                          .getComentariosByElemento(elemento.id!);
+
+                      final comentariosFormatados = await Future.wait(
                         comentarios.map((comentario) async {
                           final anexos = await DatabaseHelper.instance
                               .getAnexosByComentario(comentario.id!);
@@ -168,17 +168,22 @@ class _VisitasPendentesScreenState extends State<VisitasPendentesScreen> {
                             'anexos': anexos.map((a) => a.toMap()).toList(),
                           };
                         }),
-                      ),
-                      'temperaturas':
-                          temperaturas.map((t) => t.toMap()).toList(),
-                    };
-                  }),
-                ),
-              };
-            }),
-          ),
-          'problemas': problemas.map((p) => p.toMap()).toList(),
+                      );
+
+                      return {
+                        'elemento': elemento.toMap(),
+                        'comentarios': comentariosFormatados,
+                      };
+                    }),
+                  ),
+                };
+              }),
+            ),
+            'problemas': problemas.map((p) => p.toMap()).toList(),
+          }
         };
+
+        print('Enviando visita: $dadosVisita');
 
         // Enviar para a API e aguardar resposta
         final response = await ApiService.enviarVisita(dadosVisita);

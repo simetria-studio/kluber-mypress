@@ -1,0 +1,2 @@
+C:/Users/felipe-pc/Documents/apps/mypress/android/app/.cxx/Debug/66p6v95y/arm64-v8a/CMakeFiles/edit_cache.dir
+C:/Users/felipe-pc/Documents/apps/mypress/android/app/.cxx/Debug/66p6v95y/arm64-v8a/CMakeFiles/rebuild_cache.dir

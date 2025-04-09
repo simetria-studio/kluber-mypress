@@ -308,7 +308,7 @@ class _CadastroVisitaScreenState extends State<CadastroVisitaScreen> {
                                       setState(() {
                                         _selectedCliente = cliente;
                                         _clienteController.text =
-                                            cliente.razaoSocial;
+                                            cliente.codigoCliente;
                                       });
                                       Navigator.pop(context);
                                     },

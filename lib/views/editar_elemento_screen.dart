@@ -22,7 +22,6 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
   final _tomaController = TextEditingController();
   final _posicaoController = TextEditingController();
   final _tipoController = TextEditingController();
-  final _mypressController = TextEditingController();
   bool _isLoading = false;
   bool _hasChanges = false;
 
@@ -30,7 +29,7 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
   void initState() {
     super.initState();
     _carregarDadosElemento();
-
+    print('entrou no initstate');
     // Monitorar mudanças
     _consumo1Controller.addListener(_checkChanges);
     _consumo2Controller.addListener(_checkChanges);
@@ -38,7 +37,6 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
     _tomaController.addListener(_checkChanges);
     _posicaoController.addListener(_checkChanges);
     _tipoController.addListener(_checkChanges);
-    _mypressController.addListener(_checkChanges);
   }
 
   void _carregarDadosElemento() {
@@ -48,7 +46,6 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
     _tomaController.text = widget.elemento.toma;
     _posicaoController.text = widget.elemento.posicao;
     _tipoController.text = widget.elemento.tipo;
-    _mypressController.text = widget.elemento.mypress;
   }
 
   void _checkChanges() {
@@ -58,8 +55,7 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
             _consumo3Controller.text != widget.elemento.consumo3.toString() ||
             _tomaController.text != widget.elemento.toma ||
             _posicaoController.text != widget.elemento.posicao ||
-            _tipoController.text != widget.elemento.tipo ||
-            _mypressController.text != widget.elemento.mypress;
+            _tipoController.text != widget.elemento.tipo;
 
     if (hasChanges != _hasChanges) {
       setState(() {
@@ -83,7 +79,6 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
           toma: _tomaController.text,
           posicao: _posicaoController.text,
           tipo: _tipoController.text,
-          mypress: _mypressController.text,
           prensaId: widget.elemento.prensaId,
         );
 
@@ -337,21 +332,6 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
                             return null;
                           },
                         ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _mypressController,
-                          decoration: const InputDecoration(
-                            labelText: 'MyPress',
-                            labelStyle: TextStyle(color: Colors.white),
-                          ),
-                          style: const TextStyle(color: Colors.white),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Por favor, insira o MyPress';
-                            }
-                            return null;
-                          },
-                        ),
                         const SizedBox(height: 24),
                         SizedBox(
                           width: double.infinity,
@@ -400,7 +380,6 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
     _tomaController.dispose();
     _posicaoController.dispose();
     _tipoController.dispose();
-    _mypressController.dispose();
     super.dispose();
   }
 }

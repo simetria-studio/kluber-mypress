@@ -26,12 +26,15 @@ class _TemperaturaElementoScreenState extends State<TemperaturaElementoScreen> {
   bool _isLoading = false;
 
   Future<void> _salvarTemperaturas() async {
+    print('Iniciando salvamento de temperaturas...');
     if (_formKey.currentState!.validate()) {
+      print('Formulário validado com sucesso');
       setState(() {
         _isLoading = true;
       });
 
       try {
+        print('Criando objeto TemperaturaElemento...');
         final temperatura = TemperaturaElemento(
           dataRegistro: DateTime.now().toIso8601String(),
           elementoId: widget.elemento.id!,
@@ -52,7 +55,12 @@ class _TemperaturaElementoScreenState extends State<TemperaturaElementoScreen> {
               : null,
         );
 
+        print('Elemento ID: ${widget.elemento.id}');
+        print('Temperatura antes de salvar: ${temperatura.toMap()}');
+
+        print('Chamando DatabaseHelper.createTemperaturaElemento...');
         await DatabaseHelper.instance.createTemperaturaElemento(temperatura);
+        print('Temperatura salva com sucesso!');
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -64,6 +72,7 @@ class _TemperaturaElementoScreenState extends State<TemperaturaElementoScreen> {
           Navigator.pop(context, true);
         }
       } catch (e) {
+        print('Erro ao salvar temperatura: $e');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -79,6 +88,8 @@ class _TemperaturaElementoScreenState extends State<TemperaturaElementoScreen> {
           });
         }
       }
+    } else {
+      print('Formulário inválido');
     }
   }
 

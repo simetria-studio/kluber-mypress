@@ -1,11 +1,11 @@
 class Problema {
   final int? id;
-  final int problemaRedutorPrincipal;
+  final String problemaRedutorPrincipal;
   final String? comentarioRedutorPrincipal;
   final String? lubrificanteRedutorPrincipal;
-  final int problemaTemperatura;
+  final String problemaTemperatura;
   final String? comentarioTemperatura;
-  final int problemaTamborPrincipal;
+  final String problemaTamborPrincipal;
   final String? comentarioTamborPrincipal;
   final int myPressVisitaId;
   final String? graxaRolamentosZonasQuentes;
@@ -35,7 +35,7 @@ class Problema {
       'comentario_temperatura': comentarioTemperatura,
       'problema_tambor_principal': problemaTamborPrincipal,
       'comentario_tambor_principal': comentarioTamborPrincipal,
-      'mypress_visita_id': myPressVisitaId,
+      'visita_id': myPressVisitaId,
       'graxa_rolamentos_zonas_quentes': graxaRolamentosZonasQuentes,
       'graxa_tambor_principal': graxaTamborPrincipal,
     };
@@ -51,7 +51,7 @@ class Problema {
       comentarioTemperatura: map['comentario_temperatura'],
       problemaTamborPrincipal: map['problema_tambor_principal'],
       comentarioTamborPrincipal: map['comentario_tambor_principal'],
-      myPressVisitaId: map['mypress_visita_id'],
+      myPressVisitaId: map['visita_id'],
       graxaRolamentosZonasQuentes: map['graxa_rolamentos_zonas_quentes'],
       graxaTamborPrincipal: map['graxa_tambor_principal'],
     );

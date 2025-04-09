@@ -17,6 +17,7 @@ class ClienteService {
       );
 
       if (response.statusCode == 200) {
+        print(response.body);
         final List<dynamic> data = json.decode(response.body);
         final clientes = data.map((json) => Cliente.fromJson(json)).toList();
         await _salvarClientesCache(clientes);

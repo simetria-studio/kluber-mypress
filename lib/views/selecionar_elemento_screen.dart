@@ -10,8 +10,6 @@ import 'cadastro_anexo_screen.dart';
 import 'dart:convert';
 import '../models/anexo_comentario_model.dart';
 import 'editar_elemento_screen.dart';
-import 'temperatura_elemento_screen.dart';
-import 'cadastro_temperatura_screen.dart';
 import 'editar_temperatura_screen.dart';
 import '../widgets/custom_bottom_nav.dart';
 
@@ -376,7 +374,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            'Elemento ${elemento.id}',
+                                            elemento.tipo,
                                             style: const TextStyle(
                                               color: Color(0xFFFABA00),
                                               fontSize: 18,
@@ -384,13 +382,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                                             ),
                                           ),
                                           const SizedBox(height: 4),
-                                          Text(
-                                            elemento.tipo,
-                                            style: TextStyle(
-                                              color: Colors.grey[400],
-                                              fontSize: 14,
-                                            ),
-                                          ),
+                                        
                                         ],
                                       ),
                                     ),
@@ -461,16 +453,8 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                                         ),
                                         Expanded(
                                           child: _buildInfoItem(
-                                            icon: Icons.precision_manufacturing,
-                                            label: 'MyPress',
-                                            value: elemento.mypress,
-                                          ),
-                                        ),
-                                        Expanded(
-                                          child: _buildInfoItem(
-                                            icon:
-                                                Icons.settings_input_component,
-                                            label: 'Toma',
+                                            icon: Icons.settings_input_component,
+                                            label: 'Soma',
                                             value: elemento.toma,
                                           ),
                                         ),
@@ -486,17 +470,17 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                                           MainAxisAlignment.spaceAround,
                                       children: [
                                         _buildConsumoItem(
-                                            'Consumo 1', elemento.consumo1),
+                                            'Nominal', elemento.consumo1),
                                         _buildConsumoItem(
-                                            'Consumo 2', elemento.consumo2),
+                                            'Real', elemento.consumo2),
                                         _buildConsumoItem(
-                                            'Consumo 3', elemento.consumo3),
+                                            'Real Adicional', elemento.consumo3),
                                       ],
                                     ),
 
                                     // Adicione a seção de temperaturas aqui
                                     const SizedBox(height: 16),
-                                    _buildTemperaturasList(elemento),
+                                  
 
                                     // Comentários
                                     if (_comentariosPorElemento[elemento.id]
@@ -834,159 +818,6 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
     });
   }
 
-  Widget _buildTemperaturasList(Elemento elemento) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Divider(color: Color(0xFFFABA00), height: 1),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Temperaturas:',
-              style: TextStyle(
-                color: Color(0xFFFABA00),
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            IconButton(
-              icon: const Icon(
-                Icons.add_circle_outline,
-                color: Color(0xFFFABA00),
-                size: 24,
-              ),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => CadastroTemperaturaScreen(
-                      elemento: elemento,
-                    ),
-                  ),
-                ).then((value) {
-                  if (value == true) {
-                    _carregarDados();
-                  }
-                });
-              },
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        FutureBuilder<List<TemperaturaElemento>>(
-          future:
-              DatabaseHelper.instance.getTemperaturasByElemento(elemento.id!),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(
-                child: CircularProgressIndicator(color: Color(0xFFFABA00)),
-              );
-            }
-
-            final temperaturas = snapshot.data ?? [];
-
-            if (temperaturas.isEmpty) {
-              return Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[900],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: const Color(0xFFFABA00).withOpacity(0.3),
-                  ),
-                ),
-                child: const Center(
-                  child: Text(
-                    'Nenhuma temperatura registrada',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-              );
-            }
-
-            return ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: temperaturas.length,
-              itemBuilder: (context, index) {
-                final temperatura = temperaturas[index];
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[900],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: const Color(0xFFFABA00).withOpacity(0.3),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'Data: ${temperatura.dataRegistro}',
-                              style: const TextStyle(
-                                color: Color(0xFFFABA00),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.edit,
-                                  color: Color(0xFFFABA00),
-                                  size: 20,
-                                ),
-                                constraints: const BoxConstraints(),
-                                padding: const EdgeInsets.all(8),
-                                onPressed: () =>
-                                    _editarTemperatura(temperatura),
-                              ),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.delete_outline,
-                                  color: Colors.red,
-                                  size: 20,
-                                ),
-                                constraints: const BoxConstraints(),
-                                padding: const EdgeInsets.all(8),
-                                onPressed: () =>
-                                    _confirmarExclusaoTemperatura(temperatura),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const Divider(color: Colors.grey),
-                      _buildTemperaturaItem('Zona 1', temperatura.zona1),
-                      _buildTemperaturaItem('Zona 2', temperatura.zona2),
-                      _buildTemperaturaItem('Zona 3', temperatura.zona3),
-                      _buildTemperaturaItem('Zona 4', temperatura.zona4),
-                      _buildTemperaturaItem('Zona 5', temperatura.zona5),
-                    ],
-                  ),
-                );
-              },
-            );
-          },
-        ),
-      ],
-    );
-  }
 
   Widget _buildTemperaturaItem(String zona, double? temperatura) {
     return Padding(
