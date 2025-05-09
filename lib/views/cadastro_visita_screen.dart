@@ -21,6 +21,7 @@ class _CadastroVisitaScreenState extends State<CadastroVisitaScreen> {
   final _contatoKluberController = TextEditingController();
   DateTime _dataVisita = DateTime.now();
   List<Cliente> _clientes = [];
+  List<Cliente> _filteredClientes = [];
   bool _isLoadingClientes = true;
   final _clienteService = ClienteService();
   Cliente? _selectedCliente;
@@ -40,6 +41,7 @@ class _CadastroVisitaScreenState extends State<CadastroVisitaScreen> {
       final clientes = await _clienteService.getClientes();
       setState(() {
         _clientes = clientes;
+        _filteredClientes = clientes;
         _isLoadingClientes = false;
       });
     } catch (e) {
@@ -273,7 +275,7 @@ class _CadastroVisitaScreenState extends State<CadastroVisitaScreen> {
                                     onChanged: (value) {
                                       setState(() {
                                         // Filtrar a lista de clientes
-                                        _clientes = _clientes.where((cliente) {
+                                        _filteredClientes = _clientes.where((cliente) {
                                           return cliente.razaoSocial
                                               .toLowerCase()
                                               .contains(value.toLowerCase());
@@ -286,9 +288,9 @@ class _CadastroVisitaScreenState extends State<CadastroVisitaScreen> {
                             ),
                             Expanded(
                               child: ListView.builder(
-                                itemCount: _clientes.length,
+                                itemCount: _filteredClientes.length,
                                 itemBuilder: (context, index) {
-                                  final cliente = _clientes[index];
+                                  final cliente = _filteredClientes[index];
                                   return ListTile(
                                     title: Text(
                                       cliente.razaoSocial,

@@ -109,6 +109,7 @@ class DatabaseHelper {
         produto_cinta TEXT,
         produto_corrente TEXT,
         produto_bendroads TEXT,
+        torque REAL,
         visita_id INTEGER,
         FOREIGN KEY (visita_id) REFERENCES visitas (id)
       )
@@ -254,6 +255,7 @@ class DatabaseHelper {
           produto_cinta TEXT,
           produto_corrente TEXT,
           produto_bendroads TEXT,
+          torque REAL,
           visita_id INTEGER,
           FOREIGN KEY (visita_id) REFERENCES visitas (id)
         )

@@ -27,6 +27,7 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
   final _produtoCintaController = TextEditingController();
   final _produtoCorrenteController = TextEditingController();
   final _produtoBendroadsController = TextEditingController();
+  final _torqueController = TextEditingController();
 
   final List<String> _fabricantes = [
     'Dieffenbacher',
@@ -72,6 +73,7 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
       _produtoCintaSelecionado = widget.prensa!.produtoCinta;
       _produtoCorrenteSelecionado = widget.prensa!.produtoCorrente;
       _produtoBendroadsSelecionado = widget.prensa!.produtoBendroads;
+      _torqueController.text = widget.prensa!.torque.toString();
     }
   }
 
@@ -90,6 +92,7 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
           produtoCinta: _produtoCintaSelecionado!,
           produtoCorrente: _produtoCorrenteSelecionado!,
           produtoBendroads: _produtoBendroadsSelecionado!,
+          torque: double.parse(_torqueController.text),
         );
 
         if (widget.prensa != null) {
@@ -375,6 +378,19 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
                     return null;
                   },
                 ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _torqueController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    labelText: 'Torque',
+                    prefixIcon: Icon(Icons.speed, color: Color(0xFFFABA00)),
+                    suffixText: 'Nm',
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: (value) =>
+                      value?.isEmpty ?? true ? 'Campo obrigatório' : null,
+                ),
                 const SizedBox(height: 32),
                 SizedBox(
                   width: double.infinity,
@@ -415,6 +431,7 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
     _produtoCintaController.dispose();
     _produtoCorrenteController.dispose();
     _produtoBendroadsController.dispose();
+    _torqueController.dispose();
     super.dispose();
   }
 }

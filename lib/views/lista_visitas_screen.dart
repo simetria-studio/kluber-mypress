@@ -234,6 +234,7 @@ class _ListaVisitasScreenState extends State<ListaVisitasScreen> {
           produtoCinta: prensa.produtoCinta,
           produtoCorrente: prensa.produtoCorrente,
           produtoBendroads: prensa.produtoBendroads,
+          torque: prensa.torque,
         );
 
         final novaPrensaId =
