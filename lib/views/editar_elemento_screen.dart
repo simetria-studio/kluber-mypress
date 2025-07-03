@@ -291,13 +291,13 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
                         TextFormField(
                           controller: _tomaController,
                           decoration: const InputDecoration(
-                            labelText: 'Toma',
+                            labelText: 'Soma',
                             labelStyle: TextStyle(color: Colors.white),
                           ),
                           style: const TextStyle(color: Colors.white),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Por favor, insira a toma';
+                              return 'Por favor, insira a soma';
                             }
                             return null;
                           },

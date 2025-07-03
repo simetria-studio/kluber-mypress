@@ -22,12 +22,12 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
   final _fabricanteController = TextEditingController();
   final _comprimentoController = TextEditingController();
   final _espressuraController = TextEditingController();
+  final _larguraController = TextEditingController();
   final _produtoController = TextEditingController();
   final _velocidadeController = TextEditingController();
   final _produtoCintaController = TextEditingController();
   final _produtoCorrenteController = TextEditingController();
   final _produtoBendroadsController = TextEditingController();
-  final _torqueController = TextEditingController();
 
   final List<String> _fabricantes = [
     'Dieffenbacher',
@@ -42,7 +42,8 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
   final List<String> _tiposProdutosCinta = [
     'Hotemp Super N',
     'Hotemp Super N Plus',
-    'Klubersynh CP 2-260'
+    'Klubersynh CP 2-260',
+    'Outro'
   ];
   String? _produtoCintaSelecionado;
 
@@ -51,13 +52,15 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
     'Klubersynh CP 2-100',
     'Hotemp Super N',
     'Hotemp Super N Plus',
-    'Klubersynh CP 2-260'
+    'Klubersynh CP 2-260',
+    'Outro'
   ];
   String? _produtoCorrenteSelecionado;
 
   final List<String> _tiposProdutosBendroads = [
     'Hotemp Super CH 2-100',
-    'Klubersynh CP 2-100'
+    'Klubersynh CP 2-100',
+    'Outro'
   ];
   String? _produtoBendroadsSelecionado;
 
@@ -68,12 +71,12 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
       _fabricanteSelecionado = widget.prensa!.fabricante;
       _comprimentoController.text = widget.prensa!.comprimento.toString();
       _espressuraController.text = widget.prensa!.espressura.toString();
+      _larguraController.text = widget.prensa!.largura?.toString() ?? '';
       _produtoSelecionado = widget.prensa!.produto;
       _velocidadeController.text = widget.prensa!.velocidade.toString();
       _produtoCintaSelecionado = widget.prensa!.produtoCinta;
       _produtoCorrenteSelecionado = widget.prensa!.produtoCorrente;
       _produtoBendroadsSelecionado = widget.prensa!.produtoBendroads;
-      _torqueController.text = widget.prensa!.torque.toString();
     }
   }
 
@@ -87,12 +90,15 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
           fabricante: _fabricanteSelecionado!,
           comprimento: double.parse(_comprimentoController.text),
           espressura: double.parse(_espressuraController.text),
+          largura: _larguraController.text.isNotEmpty 
+              ? double.parse(_larguraController.text) 
+              : null,
           produto: _produtoSelecionado!,
           velocidade: double.parse(_velocidadeController.text),
           produtoCinta: _produtoCintaSelecionado!,
           produtoCorrente: _produtoCorrenteSelecionado!,
           produtoBendroads: _produtoBendroadsSelecionado!,
-          torque: double.parse(_torqueController.text),
+          torque: null,
         );
 
         if (widget.prensa != null) {
@@ -205,16 +211,22 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
-                  controller: _espressuraController,
+                  controller: _larguraController,
                   style: const TextStyle(color: Colors.white),
                   decoration: const InputDecoration(
-                    labelText: 'Espessura',
-                    prefixIcon: Icon(Icons.height, color: Color(0xFFFABA00)),
-                    suffixText: 'mm',
+                    labelText: 'Largura',
+                    labelStyle: TextStyle(color: Colors.white),
+                    prefixIcon: Icon(Icons.swap_horiz, color: Color(0xFFFABA00)),
+                    suffixText: 'm',
+                    enabledBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey),
+                    ),
+                    focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFFABA00)),
+                    ),
+                    border: UnderlineInputBorder(),
                   ),
                   keyboardType: TextInputType.number,
-                  validator: (value) =>
-                      value?.isEmpty ?? true ? 'Campo obrigatório' : null,
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
@@ -252,6 +264,19 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
                     }
                     return null;
                   },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _espressuraController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    labelText: 'Espessura',
+                    prefixIcon: Icon(Icons.height, color: Color(0xFFFABA00)),
+                    suffixText: 'mm',
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: (value) =>
+                      value?.isEmpty ?? true ? 'Campo obrigatório' : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -378,19 +403,6 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _torqueController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Torque',
-                    prefixIcon: Icon(Icons.speed, color: Color(0xFFFABA00)),
-                    suffixText: 'Nm',
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) =>
-                      value?.isEmpty ?? true ? 'Campo obrigatório' : null,
-                ),
                 const SizedBox(height: 32),
                 SizedBox(
                   width: double.infinity,
@@ -426,12 +438,12 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
     _fabricanteController.dispose();
     _comprimentoController.dispose();
     _espressuraController.dispose();
+    _larguraController.dispose();
     _produtoController.dispose();
     _velocidadeController.dispose();
     _produtoCintaController.dispose();
     _produtoCorrenteController.dispose();
     _produtoBendroadsController.dispose();
-    _torqueController.dispose();
     super.dispose();
   }
 }

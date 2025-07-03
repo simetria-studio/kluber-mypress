@@ -3,14 +3,12 @@ import 'package:mypress/views/cadastro_visita_screen.dart';
 import '../models/elemento_model.dart';
 import '../models/comentario_elemento_model.dart';
 import '../database/database_helper.dart';
-import '../models/temperatura_elemento_model.dart';
 import 'cadastro_elemento_screen.dart';
 import 'cadastro_comentario_elemento_screen.dart';
 import 'cadastro_anexo_screen.dart';
 import 'dart:convert';
 import '../models/anexo_comentario_model.dart';
 import 'editar_elemento_screen.dart';
-import 'editar_temperatura_screen.dart';
 import '../widgets/custom_bottom_nav.dart';
 
 class SelecionarElementoScreen extends StatefulWidget {
@@ -42,6 +40,16 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
 
   Future<void> _carregarDados() async {
     try {
+      // Criar elementos padrão automaticamente se não existirem
+      try {
+        await DatabaseHelper.instance.criarElementosPadrao(widget.prensaId);
+      } catch (e) {
+        // Silenciar erro se elementos já existem - isso é esperado
+        if (!e.toString().contains('já existem')) {
+          print('Erro ao criar elementos padrão: $e');
+        }
+      }
+
       final elementos =
           await DatabaseHelper.instance.getElementsByPrensa(widget.prensaId);
 
@@ -322,6 +330,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                       }
                     },
                   ),
+
                   if (_elementos.isNotEmpty) ...[
                     const SizedBox(height: 24),
                     const Text(
@@ -478,9 +487,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                                       ],
                                     ),
 
-                                    // Adicione a seção de temperaturas aqui
                                     const SizedBox(height: 16),
-                                  
 
                                     // Comentários
                                     if (_comentariosPorElemento[elemento.id]
@@ -725,7 +732,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
           style: TextStyle(color: Colors.white),
         ),
         content: const Text(
-          'Tem certeza que deseja excluir este elemento? Esta ação não pode ser desfeita e todos os comentários associados também serão excluídos.',
+        'Tem certeza que deseja excluir este elemento? Esta ação não pode ser desfeita e todos os comentários associados também serão excluídos.',
           style: TextStyle(color: Colors.white70),
         ),
         actions: [
@@ -816,109 +823,6 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
         _carregarDados();
       }
     });
-  }
-
-
-  Widget _buildTemperaturaItem(String zona, double? temperatura) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            zona,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 14,
-            ),
-          ),
-          Text(
-            temperatura != null ? '${temperatura.toStringAsFixed(1)}°C' : '-',
-            style: TextStyle(
-              color: temperatura != null ? Colors.white : Colors.grey,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _editarTemperatura(TemperaturaElemento temperatura) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EditarTemperaturaScreen(
-          temperatura: temperatura,
-          elemento:
-              _elementos.firstWhere((e) => e.id == temperatura.elementoId),
-        ),
-      ),
-    ).then((value) {
-      if (value == true) {
-        _carregarDados();
-      }
-    });
-  }
-
-  void _confirmarExclusaoTemperatura(TemperaturaElemento temperatura) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: const Text(
-          'Excluir Temperatura',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: const Text(
-          'Tem certeza que deseja excluir este registro de temperatura?',
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancelar',
-              style: TextStyle(color: Colors.grey[400]),
-            ),
-          ),
-          TextButton(
-            onPressed: () async {
-              try {
-                await DatabaseHelper.instance
-                    .deleteTemperaturaElemento(temperatura.id!);
-                if (mounted) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Temperatura excluída com sucesso!'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                  _carregarDados();
-                }
-              } catch (e) {
-                if (mounted) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content:
-                          Text('Erro ao excluir temperatura: ${e.toString()}'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              }
-            },
-            child: const Text(
-              'Excluir',
-              style: TextStyle(color: Colors.red),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   Future<void> _finalizarCadastro() async {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
+import 'solicitacao_acesso_screen.dart';
 import '../services/auth_service.dart';
 import '../services/storage_service.dart';
 
@@ -257,6 +258,52 @@ class _LoginScreenState extends State<LoginScreen> {
                                 color: Colors.black,
                               ),
                             ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  // Botão de solicitação de acesso
+                  Center(
+                    child: TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SolicitacaoAcessoScreen(),
+                          ),
+                        );
+                      },
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFFFABA00),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.person_add_outlined,
+                            size: 20,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Solicitar Acesso',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Texto informativo
+                  Center(
+                    child: Text(
+                      'Não tem acesso? Solicite aqui',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 14,
+                      ),
                     ),
                   ),
                 ],

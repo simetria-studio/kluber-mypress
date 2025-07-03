@@ -4,10 +4,12 @@ import '../database/database_helper.dart';
 
 class CadastroTemperaturaScreen extends StatefulWidget {
   final int prensaId;
+  final TemperaturaPrensa? temperatura;
 
   const CadastroTemperaturaScreen({
     super.key,
     required this.prensaId,
+    this.temperatura,
   });
 
   @override
@@ -24,6 +26,18 @@ class _CadastroTemperaturaScreenState extends State<CadastroTemperaturaScreen> {
   final _zona5Controller = TextEditingController();
   bool _isLoading = false;
 
+  @override
+  void initState() {
+    super.initState();
+    if (widget.temperatura != null) {
+      _zona1Controller.text = widget.temperatura!.zona1?.toString() ?? '';
+      _zona2Controller.text = widget.temperatura!.zona2?.toString() ?? '';
+      _zona3Controller.text = widget.temperatura!.zona3?.toString() ?? '';
+      _zona4Controller.text = widget.temperatura!.zona4?.toString() ?? '';
+      _zona5Controller.text = widget.temperatura!.zona5?.toString() ?? '';
+    }
+  }
+
   Future<void> _salvarTemperatura() async {
     print('Iniciando salvamento de temperatura...');
     if (_formKey.currentState!.validate()) {
@@ -35,7 +49,8 @@ class _CadastroTemperaturaScreenState extends State<CadastroTemperaturaScreen> {
       try {
         print('Criando objeto TemperaturaPrensa...');
         final temperatura = TemperaturaPrensa(
-          dataRegistro: DateTime.now().toIso8601String(),
+          id: widget.temperatura?.id,
+          dataRegistro: widget.temperatura?.dataRegistro ?? DateTime.now().toIso8601String(),
           zona1: _zona1Controller.text.isNotEmpty
               ? double.parse(_zona1Controller.text)
               : null,
@@ -57,14 +72,22 @@ class _CadastroTemperaturaScreenState extends State<CadastroTemperaturaScreen> {
         print('Prensa ID: ${widget.prensaId}');
         print('Temperatura antes de salvar: ${temperatura.toMap()}');
 
-        print('Chamando DatabaseHelper.createTemperaturaPrensa...');
-        await DatabaseHelper.instance.createTemperaturaPrensa(temperatura);
-        print('Temperatura salva com sucesso!');
+        print('Chamando DatabaseHelper...');
+        if (widget.temperatura != null) {
+          await DatabaseHelper.instance.updateTemperaturaPrensa(temperatura);
+          print('Temperatura atualizada com sucesso!');
+        } else {
+          await DatabaseHelper.instance.createTemperaturaPrensa(temperatura);
+          print('Temperatura salva com sucesso!');
+        }
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Temperaturas registradas com sucesso!'),
+            SnackBar(
+              content: Text(widget.temperatura != null 
+                ? 'Temperaturas atualizadas com sucesso!'
+                : 'Temperaturas registradas com sucesso!'
+              ),
               backgroundColor: Colors.green,
             ),
           );
@@ -75,7 +98,7 @@ class _CadastroTemperaturaScreenState extends State<CadastroTemperaturaScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Erro ao registrar temperaturas: ${e.toString()}'),
+              content: Text('Erro ao ${widget.temperatura != null ? 'atualizar' : 'registrar'} temperaturas: ${e.toString()}'),
               backgroundColor: Colors.red,
             ),
           );
@@ -98,9 +121,9 @@ class _CadastroTemperaturaScreenState extends State<CadastroTemperaturaScreen> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: const Text(
-          'Registrar Temperatura',
-          style: TextStyle(color: Color(0xFFFABA00)),
+        title: Text(
+          widget.temperatura != null ? 'Editar Temperatura' : 'Registrar Temperatura',
+          style: const TextStyle(color: Color(0xFFFABA00)),
         ),
         iconTheme: const IconThemeData(color: Color(0xFFFABA00)),
       ),

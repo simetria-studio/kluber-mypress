@@ -104,6 +104,7 @@ class DatabaseHelper {
         fabricante TEXT,
         comprimento REAL,
         espressura REAL,
+        largura REAL,
         produto TEXT,
         velocidade REAL,
         produto_cinta TEXT,
@@ -250,6 +251,7 @@ class DatabaseHelper {
           fabricante TEXT,
           comprimento REAL,
           espressura REAL,
+          largura REAL,
           produto TEXT,
           velocidade REAL,
           produto_cinta TEXT,
@@ -260,6 +262,19 @@ class DatabaseHelper {
           FOREIGN KEY (visita_id) REFERENCES visitas (id)
         )
       ''');
+    } else {
+      try {
+        // Verifica se a coluna largura existe
+        var columns = await db.rawQuery('PRAGMA table_info(prensas)');
+        bool hasLarguraColumn = columns.any((column) => column['name'] == 'largura');
+        
+        if (!hasLarguraColumn) {
+          // Tenta adicionar a coluna largura
+          await db.execute('ALTER TABLE prensas ADD COLUMN largura REAL');
+        }
+      } catch (e) {
+        print('Erro ao verificar/adicionar coluna largura: $e');
+      }
     }
 
     if (!tableNames.contains('elementos')) {
@@ -379,6 +394,48 @@ class DatabaseHelper {
   Future<int> createElemento(Elemento elemento) async {
     final db = await instance.database;
     return await db.insert('elementos', elemento.toMap());
+  }
+
+  Future<void> criarElementosPadrao(int prensaId) async {
+    final db = await instance.database;
+    
+    // Verificar se já existem elementos padrão para esta prensa
+    final existingElements = await db.query(
+      'elementos',
+      where: 'prensa_id = ? AND tipo = ? AND (posicao = ? OR posicao = ?)',
+      whereArgs: [prensaId, 'Cinta metálica', 'Superior', 'Inferior'],
+    );
+    
+    // Se já existem elementos padrão, lançar exceção informativa
+    if (existingElements.isNotEmpty) {
+      throw Exception('Elementos padrão de cinta metálica já existem para esta prensa');
+    }
+    
+    // Criar elemento padrão: Cinta metálica superior
+    final elementoSuperior = Elemento(
+      consumo1: 1.0,
+      consumo2: 1.0,
+      consumo3: 1.0,
+      toma: '2.0', // soma dos consumos 2 e 3
+      posicao: 'Superior',
+      tipo: 'Cinta metálica',
+      prensaId: prensaId,
+    );
+    
+    // Criar elemento padrão: Cinta metálica inferior
+    final elementoInferior = Elemento(
+      consumo1: 1.0,
+      consumo2: 1.0,
+      consumo3: 1.0,
+      toma: '2.0', // soma dos consumos 2 e 3
+      posicao: 'Inferior',
+      tipo: 'Cinta metálica',
+      prensaId: prensaId,
+    );
+    
+    // Inserir elementos padrão
+    await db.insert('elementos', elementoSuperior.toMap());
+    await db.insert('elementos', elementoInferior.toMap());
   }
 
   Future<List<Elemento>> getElementsByPrensa(int prensaId) async {

@@ -5,12 +5,13 @@ class Prensa {
   final String fabricante;
   final double comprimento;
   final double espressura;
+  final double? largura;
   final String produto;
   final double velocidade;
   final String produtoCinta;
   final String produtoCorrente;
   final String produtoBendroads;
-  final double torque;
+  final double? torque;
 
   Prensa({
     this.id,
@@ -19,12 +20,13 @@ class Prensa {
     required this.fabricante,
     required this.comprimento,
     required this.espressura,
+    this.largura,
     required this.produto,
     required this.velocidade,
     required this.produtoCinta,
     required this.produtoCorrente,
     required this.produtoBendroads,
-    required this.torque,
+    this.torque,
   });
 
   Map<String, dynamic> toMap() {
@@ -35,12 +37,13 @@ class Prensa {
       'fabricante': fabricante,
       'comprimento': comprimento,
       'espressura': espressura,
+      'largura': largura,
       'produto': produto,
       'velocidade': velocidade,
       'produto_cinta': produtoCinta,
       'produto_corrente': produtoCorrente,
       'produto_bendroads': produtoBendroads,
-      'torque': torque,
+      'torque': torque ?? 0.0,
     };
   }
 
@@ -52,6 +55,7 @@ class Prensa {
       fabricante: map['fabricante'],
       comprimento: map['comprimento'],
       espressura: map['espressura'],
+      largura: map['largura'],
       produto: map['produto'],
       velocidade: map['velocidade'],
       produtoCinta: map['produto_cinta'],
