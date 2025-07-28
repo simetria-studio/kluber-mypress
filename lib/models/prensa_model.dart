@@ -3,7 +3,7 @@ class Prensa {
   final int visitaId;
   final String tipoPrensa;
   final String fabricante;
-  final double comprimento;
+  final double? comprimento;
   final double espressura;
   final double? largura;
   final String produto;
@@ -18,7 +18,7 @@ class Prensa {
     required this.visitaId,
     required this.tipoPrensa,
     required this.fabricante,
-    required this.comprimento,
+    this.comprimento,
     required this.espressura,
     this.largura,
     required this.produto,

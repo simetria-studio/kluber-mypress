@@ -32,7 +32,8 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
   final List<String> _fabricantes = [
     'Dieffenbacher',
     'Siempelkamp',
-    'Kusters'
+    'Kusters',
+    'Outro'
   ];
   String? _fabricanteSelecionado;
 
@@ -43,7 +44,8 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
     'Hotemp Super N',
     'Hotemp Super N Plus',
     'Klubersynh CP 2-260',
-    'Outro'
+    'Outro',
+    'N/A'
   ];
   String? _produtoCintaSelecionado;
 
@@ -53,14 +55,16 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
     'Hotemp Super N',
     'Hotemp Super N Plus',
     'Klubersynh CP 2-260',
-    'Outro'
+    'Outro',
+    'N/A'
   ];
   String? _produtoCorrenteSelecionado;
 
   final List<String> _tiposProdutosBendroads = [
     'Hotemp Super CH 2-100',
     'Klubersynh CP 2-100',
-    'Outro'
+    'Outro',
+    'N/A'
   ];
   String? _produtoBendroadsSelecionado;
 
@@ -69,7 +73,7 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
     super.initState();
     if (widget.prensa != null) {
       _fabricanteSelecionado = widget.prensa!.fabricante;
-      _comprimentoController.text = widget.prensa!.comprimento.toString();
+      _comprimentoController.text = widget.prensa!.comprimento?.toString() ?? '';
       _espressuraController.text = widget.prensa!.espressura.toString();
       _larguraController.text = widget.prensa!.largura?.toString() ?? '';
       _produtoSelecionado = widget.prensa!.produto;
@@ -88,7 +92,9 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
           visitaId: widget.visitaId,
           tipoPrensa: _fabricanteSelecionado!,
           fabricante: _fabricanteSelecionado!,
-          comprimento: double.parse(_comprimentoController.text),
+          comprimento: _comprimentoController.text.isNotEmpty 
+              ? double.parse(_comprimentoController.text) 
+              : null,
           espressura: double.parse(_espressuraController.text),
           largura: _larguraController.text.isNotEmpty 
               ? double.parse(_larguraController.text) 
@@ -200,21 +206,27 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
                   controller: _comprimentoController,
                   style: const TextStyle(color: Colors.white),
                   decoration: const InputDecoration(
-                    labelText: 'Comprimento',
+                    labelText: 'Comprimento (opcional)',
+                    labelStyle: TextStyle(color: Colors.white),
                     prefixIcon:
                         Icon(Icons.straighten, color: Color(0xFFFABA00)),
                     suffixText: 'm',
+                    enabledBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey),
+                    ),
+                    focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFFABA00)),
+                    ),
+                    border: UnderlineInputBorder(),
                   ),
                   keyboardType: TextInputType.number,
-                  validator: (value) =>
-                      value?.isEmpty ?? true ? 'Campo obrigatório' : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _larguraController,
                   style: const TextStyle(color: Colors.white),
                   decoration: const InputDecoration(
-                    labelText: 'Largura',
+                    labelText: 'Largura (opcional)',
                     labelStyle: TextStyle(color: Colors.white),
                     prefixIcon: Icon(Icons.swap_horiz, color: Color(0xFFFABA00)),
                     suffixText: 'm',

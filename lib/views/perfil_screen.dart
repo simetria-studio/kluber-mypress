@@ -13,6 +13,24 @@ class PerfilScreen extends StatefulWidget {
 class _PerfilScreenState extends State<PerfilScreen> {
   int _currentIndex = 4; // Índice 4 para a aba de perfil
   final _storageService = StorageService();
+  String _userName = 'Usuário Kluber';
+  String _userEmail = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final userName = await _storageService.getUserName();
+    final userEmail = await _storageService.getUserEmail();
+    
+    setState(() {
+      _userName = userName ?? 'Usuário Kluber';
+      _userEmail = userEmail ?? '';
+    });
+  }
 
   Future<void> _handleLogout() async {
     showDialog(
@@ -83,9 +101,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Usuário Kluber',
-                style: TextStyle(
+              Text(
+                _userName,
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -99,37 +117,17 @@ class _PerfilScreenState extends State<PerfilScreen> {
                   fontSize: 16,
                 ),
               ),
-              const SizedBox(height: 32),
-              // Opções do perfil
-              _buildOptionCard(
-                icon: Icons.person_outline,
-                title: 'Informações Pessoais',
-                onTap: () {
-                  // TODO: Implementar edição de informações pessoais
-                },
-              ),
-              _buildOptionCard(
-                icon: Icons.lock_outline,
-                title: 'Alterar Senha',
-                onTap: () {
-                  // TODO: Implementar alteração de senha
-                },
-              ),
-              _buildOptionCard(
-                icon: Icons.settings_outlined,
-                title: 'Configurações',
-                onTap: () {
-                  // TODO: Implementar configurações
-                },
-              ),
-              _buildOptionCard(
-                icon: Icons.help_outline,
-                title: 'Ajuda e Suporte',
-                onTap: () {
-                  // TODO: Implementar ajuda e suporte
-                },
-              ),
-              const SizedBox(height: 32),
+              if (_userEmail.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  _userEmail,
+                  style: TextStyle(
+                    color: Colors.grey[500],
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 64),
               // Botão de logout
               SizedBox(
                 width: double.infinity,
@@ -175,60 +173,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
         onAddVisitPressed: () {
           // Implementar navegação para adicionar visita
         },
-      ),
-    );
-  }
-
-  Widget _buildOptionCard({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    return Card(
-      color: Colors.grey[900],
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: const Color(0xFFFABA00).withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFABA00).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  icon,
-                  color: const Color(0xFFFABA00),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const Spacer(),
-              const Icon(
-                Icons.arrow_forward_ios,
-                color: Color(0xFFFABA00),
-                size: 16,
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

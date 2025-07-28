@@ -52,6 +52,10 @@ class _LoginScreenState extends State<LoginScreen> {
             response['token_expires_in'],
           );
 
+          // Salvar dados do usuário
+          String userName = response['name'] ?? response['usuario'] ?? 'Usuário Kluber';
+          await _storageService.saveUserData(userName, _emailController.text);
+
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (context) => const HomeScreen()),
           );

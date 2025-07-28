@@ -31,18 +31,23 @@ class _CadastroProblemaScreenState extends State<CadastroProblemaScreen> {
     'Klubersynth GH 6',
     'Klubersynhth GEM 4',
     'Kluberoil GEM 1',
-    'Klubersynth MEG 4'
+    'Klubersynth MEG 4',
+    'Outros'
   ];
   String? _lubrificanteSelecionado;
 
   final List<String> _tiposGraxaRolamentos = [
     'klubersynth BH 72-422',
     'klubertemp HB 53-391',
-    'klubertemp GR AR 555'
+    'klubertemp GR AR 555',
+    'Outros'
   ];
   String? _graxaRolamentosSelecionada;
 
-  final List<String> _tiposGraxaTambor = ['Kluberlub PHB 71-461'];
+  final List<String> _tiposGraxaTambor = [
+    'Kluberlub PHB 71-461',
+    'Outros'
+  ];
   String? _graxaTamborSelecionada;
 
   @override
@@ -276,7 +281,7 @@ class _CadastroProblemaScreenState extends State<CadastroProblemaScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Zona Quente',
+                                                        'Rolamento da zona quente',
                         style: TextStyle(
                           color: Color(0xFFFABA00),
                           fontSize: 18,
@@ -393,7 +398,7 @@ class _CadastroProblemaScreenState extends State<CadastroProblemaScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Tambor Principal',
+                        'Rolamento da zona quente',
                         style: TextStyle(
                           color: Color(0xFFFABA00),
                           fontSize: 18,

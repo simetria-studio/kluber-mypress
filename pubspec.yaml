@@ -37,10 +37,12 @@ dependencies:
   shared_preferences: ^2.2.2  # Adicione esta linha
   image_picker: ^1.0.7
   flutter_image_compress: ^2.1.0
+  package_info_plus: ^4.2.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
+  flutter_launcher_icons: ^0.14.4
 
 dev_dependencies:
   flutter_test:
@@ -58,6 +60,14 @@ dev_dependencies:
 # following page: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
+flutter_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/img/icone.png"
+  remove_alpha_ios: true
+  adaptive_icon_background: "#ffffff"
+  adaptive_icon_foreground: "assets/img/icone.png"
+
 flutter:
 
   # The following line ensures that the Material Icons font is
