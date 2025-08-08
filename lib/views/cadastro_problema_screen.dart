@@ -89,7 +89,7 @@ class _CadastroProblemaScreenState extends State<CadastroProblemaScreen> {
           lubrificanteRedutorPrincipal: _lubrificanteSelecionado,
           graxaRolamentosZonasQuentes: _graxaRolamentosSelecionada,
           graxaTamborPrincipal: _graxaTamborSelecionada,
-          myPressVisitaId: widget.visitaId,
+          myPressPrensaId: widget.visitaId, // TODO: Ajustar para receber prensaId em vez de visitaId
         );
 
         print('Salvando problema: ${problema.toMap()}');

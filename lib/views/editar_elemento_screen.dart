@@ -243,14 +243,16 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
                         TextFormField(
                           controller: _consumo1Controller,
                           decoration: const InputDecoration(
-                            labelText: 'Consumo 1',
+                            labelText: 'Consumo Nominal',
                             labelStyle: TextStyle(color: Colors.white),
+                            prefixIcon: Icon(Icons.speed, color: Color(0xFFFABA00)),
+                            suffixText: 'g/h',
                           ),
                           style: const TextStyle(color: Colors.white),
                           keyboardType: TextInputType.number,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Por favor, insira o consumo 1';
+                              return 'Por favor, insira o consumo nominal';
                             }
                             return null;
                           },
@@ -259,14 +261,16 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
                         TextFormField(
                           controller: _consumo2Controller,
                           decoration: const InputDecoration(
-                            labelText: 'Consumo 2',
+                            labelText: 'Consumo Real',
                             labelStyle: TextStyle(color: Colors.white),
+                            prefixIcon: Icon(Icons.speed, color: Color(0xFFFABA00)),
+                            suffixText: 'g/h',
                           ),
                           style: const TextStyle(color: Colors.white),
                           keyboardType: TextInputType.number,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Por favor, insira o consumo 2';
+                              return 'Por favor, insira o consumo real';
                             }
                             return null;
                           },
@@ -275,14 +279,16 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
                         TextFormField(
                           controller: _consumo3Controller,
                           decoration: const InputDecoration(
-                            labelText: 'Consumo 3',
+                            labelText: 'Consumo Real Adicional',
                             labelStyle: TextStyle(color: Colors.white),
+                            prefixIcon: Icon(Icons.speed, color: Color(0xFFFABA00)),
+                            suffixText: 'g/h',
                           ),
                           style: const TextStyle(color: Colors.white),
                           keyboardType: TextInputType.number,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Por favor, insira o consumo 3';
+                              return 'Por favor, insira o consumo real adicional';
                             }
                             return null;
                           },
@@ -293,6 +299,7 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
                           decoration: const InputDecoration(
                             labelText: 'Soma',
                             labelStyle: TextStyle(color: Colors.white),
+                            prefixIcon: Icon(Icons.settings_input_component, color: Color(0xFFFABA00)),
                           ),
                           style: const TextStyle(color: Colors.white),
                           validator: (value) {

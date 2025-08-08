@@ -27,7 +27,7 @@ class DatabaseHelper {
 
     final db = await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
       onConfigure: _onConfigure,
@@ -81,6 +81,62 @@ class DatabaseHelper {
         
         // Renomeia a nova tabela
         await db.execute('ALTER TABLE visitas_temp RENAME TO visitas');
+      }
+    }
+    
+    if (oldVersion < 3) {
+      try {
+        // Migração da tabela problemas: mudança de visita_id para prensa_id
+        var columns = await db.rawQuery('PRAGMA table_info(problemas)');
+        bool hasPrensaIdColumn = columns.any((column) => column['name'] == 'prensa_id');
+        bool hasVisitaIdColumn = columns.any((column) => column['name'] == 'visita_id');
+        
+        if (!hasPrensaIdColumn && hasVisitaIdColumn) {
+          // Adiciona a nova coluna prensa_id
+          await db.execute('ALTER TABLE problemas ADD COLUMN prensa_id INTEGER');
+          
+          // Remove a coluna antiga visita_id
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS problemas_temp(
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              problema_redutor_principal TEXT,
+              comentario_redutor_principal TEXT,
+              lubrificante_redutor_principal TEXT,
+              problema_temperatura TEXT,
+              comentario_temperatura TEXT,
+              problema_tambor_principal TEXT,
+              comentario_tambor_principal TEXT,
+              graxa_rolamentos_zonas_quentes TEXT,
+              graxa_tambor_principal TEXT,
+              prensa_id INTEGER,
+              FOREIGN KEY (prensa_id) REFERENCES prensas (id)
+            )
+          ''');
+          
+          // Copia dados existentes (sem a coluna visita_id)
+          await db.execute('''
+            INSERT INTO problemas_temp(
+              id, problema_redutor_principal, comentario_redutor_principal,
+              lubrificante_redutor_principal, problema_temperatura, comentario_temperatura,
+              problema_tambor_principal, comentario_tambor_principal,
+              graxa_rolamentos_zonas_quentes, graxa_tambor_principal, prensa_id
+            )
+            SELECT 
+              id, problema_redutor_principal, comentario_redutor_principal,
+              lubrificante_redutor_principal, problema_temperatura, comentario_temperatura,
+              problema_tambor_principal, comentario_tambor_principal,
+              graxa_rolamentos_zonas_quentes, graxa_tambor_principal, prensa_id
+            FROM problemas
+          ''');
+          
+          // Remove tabela antiga
+          await db.execute('DROP TABLE problemas');
+          
+          // Renomeia a nova tabela
+          await db.execute('ALTER TABLE problemas_temp RENAME TO problemas');
+        }
+      } catch (e) {
+        print('Erro durante migração da tabela problemas: $e');
       }
     }
   }
@@ -142,8 +198,8 @@ class DatabaseHelper {
         comentario_tambor_principal TEXT,
         graxa_rolamentos_zonas_quentes TEXT,
         graxa_tambor_principal TEXT,
-        visita_id INTEGER,
-        FOREIGN KEY (visita_id) REFERENCES visitas (id)
+        prensa_id INTEGER,
+        FOREIGN KEY (prensa_id) REFERENCES prensas (id)
       )
     ''');
 
@@ -306,8 +362,8 @@ class DatabaseHelper {
           comentario_tambor_principal TEXT,
           graxa_rolamentos_zonas_quentes TEXT,
           graxa_tambor_principal TEXT,
-          visita_id INTEGER,
-          FOREIGN KEY (visita_id) REFERENCES visitas (id)
+          prensa_id INTEGER,
+          FOREIGN KEY (prensa_id) REFERENCES prensas (id)
         )
       ''');
     }
@@ -460,6 +516,18 @@ class DatabaseHelper {
       'problemas',
       where: 'visita_id = ?',
       whereArgs: [visitaId],
+    );
+    print('Problemas encontrados: $maps');
+    return List.generate(maps.length, (i) => Problema.fromMap(maps[i]));
+  }
+
+  Future<List<Problema>> getProblemasByPrensa(int prensaId) async {
+    final db = await instance.database;
+    print('Buscando problemas para a prensa $prensaId');
+    final List<Map<String, dynamic>> maps = await db.query(
+      'problemas',
+      where: 'prensa_id = ?',
+      whereArgs: [prensaId],
     );
     print('Problemas encontrados: $maps');
     return List.generate(maps.length, (i) => Problema.fromMap(maps[i]));

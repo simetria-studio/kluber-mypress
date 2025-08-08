@@ -7,6 +7,7 @@ import 'selecionar_cadastro_screen.dart';
 import '../models/cliente_model.dart';
 import '../services/cliente_service.dart';
 import '../models/usuario_kluber_model.dart';
+import 'cadastro_prensa_temperatura_screen.dart';
 
 
 
@@ -264,7 +265,7 @@ class _CadastroVisitaScreenState extends State<CadastroVisitaScreen> {
             context,
             MaterialPageRoute(
               builder: (context) =>
-                  SelecionarCadastroScreen(visitaId: visitaId),
+                  CadastroPrensaTemperaturaScreen(visitaId: visitaId),
             ),
           );
         }

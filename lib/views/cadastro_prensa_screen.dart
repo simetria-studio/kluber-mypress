@@ -128,7 +128,6 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
                 MaterialPageRoute(
                   builder: (context) => SelecionarElementoScreen(
                     prensaId: prensaId,
-                    visitaId: widget.visitaId,
                   ),
                 ),
               );

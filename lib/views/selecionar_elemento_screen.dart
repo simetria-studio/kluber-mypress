@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mypress/views/cadastro_visita_screen.dart';
 import '../models/elemento_model.dart';
 import '../models/comentario_elemento_model.dart';
+import '../models/problema_model.dart';
 import '../database/database_helper.dart';
 import 'cadastro_elemento_screen.dart';
 import 'cadastro_comentario_elemento_screen.dart';
@@ -13,12 +14,10 @@ import '../widgets/custom_bottom_nav.dart';
 
 class SelecionarElementoScreen extends StatefulWidget {
   final int prensaId;
-  final int visitaId;
 
   const SelecionarElementoScreen({
     super.key,
     required this.prensaId,
-    required this.visitaId,
   });
 
   @override
@@ -32,10 +31,52 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
   bool _isLoading = true;
   int _currentIndex = 0;
 
+  // Variáveis para inspeção de graxa
+  final _formKey = GlobalKey<FormState>();
+  bool _problemaRedutorPrincipal = false;
+  bool _problemaTemperatura = false;
+  bool _problemaTamborPrincipal = false;
+
+  final _comentarioRedutorController = TextEditingController();
+  final _comentarioTemperaturaController = TextEditingController();
+  final _comentarioTamborController = TextEditingController();
+  bool _isSavingProblema = false;
+
+  final List<String> _tiposLubrificantes = [
+    'Klubersynth GH 6',
+    'Klubersynhth GEM 4',
+    'Kluberoil GEM 1',
+    'Klubersynth MEG 4',
+    'Outros'
+  ];
+  String? _lubrificanteSelecionado;
+
+  final List<String> _tiposGraxaRolamentos = [
+    'klubersynth BH 72-422',
+    'klubertemp HB 53-391',
+    'klubertemp GR AR 555',
+    'Outros'
+  ];
+  String? _graxaRolamentosSelecionada;
+
+  final List<String> _tiposGraxaTambor = [
+    'Kluberlub PHB 71-461',
+    'Outros'
+  ];
+  String? _graxaTamborSelecionada;
+
   @override
   void initState() {
     super.initState();
     _carregarDados();
+  }
+
+  @override
+  void dispose() {
+    _comentarioRedutorController.dispose();
+    _comentarioTemperaturaController.dispose();
+    _comentarioTamborController.dispose();
+    super.dispose();
   }
 
   Future<void> _carregarDados() async {
@@ -61,6 +102,23 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
               .getComentariosByElemento(elemento.id!);
           comentariosPorElemento[elemento.id!] = comentarios;
         }
+      }
+
+      // Carregar problemas existentes
+      final problemas = await DatabaseHelper.instance.getProblemasByPrensa(widget.prensaId);
+      if (problemas.isNotEmpty) {
+        final problema = problemas.first;
+        setState(() {
+          _problemaRedutorPrincipal = problema.problemaRedutorPrincipal == '1';
+          _problemaTemperatura = problema.problemaTemperatura == '1';
+          _problemaTamborPrincipal = problema.problemaTamborPrincipal == '1';
+          _comentarioRedutorController.text = problema.comentarioRedutorPrincipal ?? '';
+          _comentarioTemperaturaController.text = problema.comentarioTemperatura ?? '';
+          _comentarioTamborController.text = problema.comentarioTamborPrincipal ?? '';
+          _lubrificanteSelecionado = problema.lubrificanteRedutorPrincipal;
+          _graxaRolamentosSelecionada = problema.graxaRolamentosZonasQuentes;
+          _graxaTamborSelecionada = problema.graxaTamborPrincipal;
+        });
       }
 
       setState(() {
@@ -329,6 +387,377 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                         _carregarDados();
                       }
                     },
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Formulário de Inspeção de Graxa
+                  Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Inspeção de Graxa',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        // Redutor Principal
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[900],
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: const Color(0xFFFABA00).withOpacity(0.3),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.settings,
+                                    color: Color(0xFFFABA00),
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Redutor Principal',
+                                    style: TextStyle(
+                                      color: Color(0xFFFABA00),
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  Checkbox(
+                                    value: _problemaRedutorPrincipal,
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _problemaRedutorPrincipal = value ?? false;
+                                      });
+                                    },
+                                    activeColor: const Color(0xFFFABA00),
+                                    checkColor: Colors.black,
+                                  ),
+                                  const Text(
+                                    'Problema identificado',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (_problemaRedutorPrincipal) ...[
+                                const SizedBox(height: 12),
+                                TextFormField(
+                                  controller: _comentarioRedutorController,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Comentário',
+                                    labelStyle: TextStyle(color: Color(0xFFFABA00)),
+                                    border: OutlineInputBorder(),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(color: Color(0xFFFABA00)),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(color: Color(0xFFFABA00), width: 2),
+                                    ),
+                                  ),
+                                  style: const TextStyle(color: Colors.white),
+                                  maxLines: 3,
+                                ),
+                                const SizedBox(height: 12),
+                                DropdownButtonFormField<String>(
+                                  value: _lubrificanteSelecionado,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Lubrificante',
+                                    labelStyle: TextStyle(color: Color(0xFFFABA00)),
+                                    border: OutlineInputBorder(),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(color: Color(0xFFFABA00)),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(color: Color(0xFFFABA00), width: 2),
+                                    ),
+                                  ),
+                                  dropdownColor: Colors.grey[900],
+                                  style: const TextStyle(color: Colors.white),
+                                  items: _tiposLubrificantes.map((String value) {
+                                    return DropdownMenuItem<String>(
+                                      value: value,
+                                      child: Text(value),
+                                    );
+                                  }).toList(),
+                                  onChanged: (String? newValue) {
+                                    setState(() {
+                                      _lubrificanteSelecionado = newValue;
+                                    });
+                                  },
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Temperatura
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[900],
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: const Color(0xFFFABA00).withOpacity(0.3),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.thermostat,
+                                    color: Color(0xFFFABA00),
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Temperatura',
+                                    style: TextStyle(
+                                      color: Color(0xFFFABA00),
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  Checkbox(
+                                    value: _problemaTemperatura,
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _problemaTemperatura = value ?? false;
+                                      });
+                                    },
+                                    activeColor: const Color(0xFFFABA00),
+                                    checkColor: Colors.black,
+                                  ),
+                                  const Text(
+                                    'Problema identificado',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (_problemaTemperatura) ...[
+                                const SizedBox(height: 12),
+                                TextFormField(
+                                  controller: _comentarioTemperaturaController,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Comentário',
+                                    labelStyle: TextStyle(color: Color(0xFFFABA00)),
+                                    border: OutlineInputBorder(),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(color: Color(0xFFFABA00)),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(color: Color(0xFFFABA00), width: 2),
+                                    ),
+                                  ),
+                                  style: const TextStyle(color: Colors.white),
+                                  maxLines: 3,
+                                ),
+                                const SizedBox(height: 12),
+                                DropdownButtonFormField<String>(
+                                  value: _graxaRolamentosSelecionada,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Graxa para Rolamentos',
+                                    labelStyle: TextStyle(color: Color(0xFFFABA00)),
+                                    border: OutlineInputBorder(),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(color: Color(0xFFFABA00)),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(color: Color(0xFFFABA00), width: 2),
+                                    ),
+                                  ),
+                                  dropdownColor: Colors.grey[900],
+                                  style: const TextStyle(color: Colors.white),
+                                  items: _tiposGraxaRolamentos.map((String value) {
+                                    return DropdownMenuItem<String>(
+                                      value: value,
+                                      child: Text(value),
+                                    );
+                                  }).toList(),
+                                  onChanged: (String? newValue) {
+                                    setState(() {
+                                      _graxaRolamentosSelecionada = newValue;
+                                    });
+                                  },
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Tambor Principal
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[900],
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: const Color(0xFFFABA00).withOpacity(0.3),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.rotate_right,
+                                    color: Color(0xFFFABA00),
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Tambor Principal',
+                                    style: TextStyle(
+                                      color: Color(0xFFFABA00),
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  Checkbox(
+                                    value: _problemaTamborPrincipal,
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _problemaTamborPrincipal = value ?? false;
+                                      });
+                                    },
+                                    activeColor: const Color(0xFFFABA00),
+                                    checkColor: Colors.black,
+                                  ),
+                                  const Text(
+                                    'Problema identificado',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (_problemaTamborPrincipal) ...[
+                                const SizedBox(height: 12),
+                                TextFormField(
+                                  controller: _comentarioTamborController,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Comentário',
+                                    labelStyle: TextStyle(color: Color(0xFFFABA00)),
+                                    border: OutlineInputBorder(),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(color: Color(0xFFFABA00)),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(color: Color(0xFFFABA00), width: 2),
+                                    ),
+                                  ),
+                                  style: const TextStyle(color: Colors.white),
+                                  maxLines: 3,
+                                ),
+                                const SizedBox(height: 12),
+                                DropdownButtonFormField<String>(
+                                  value: _graxaTamborSelecionada,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Graxa para Tambor',
+                                    labelStyle: TextStyle(color: Color(0xFFFABA00)),
+                                    border: OutlineInputBorder(),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(color: Color(0xFFFABA00)),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(color: Color(0xFFFABA00), width: 2),
+                                    ),
+                                  ),
+                                  dropdownColor: Colors.grey[900],
+                                  style: const TextStyle(color: Colors.white),
+                                  items: _tiposGraxaTambor.map((String value) {
+                                    return DropdownMenuItem<String>(
+                                      value: value,
+                                      child: Text(value),
+                                    );
+                                  }).toList(),
+                                  onChanged: (String? newValue) {
+                                    setState(() {
+                                      _graxaTamborSelecionada = newValue;
+                                    });
+                                  },
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Botão Salvar Inspeção
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _isSavingProblema ? null : _salvarProblema,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFFABA00),
+                              foregroundColor: Colors.black,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: _isSavingProblema
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.black,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Text(
+                                    'Salvar Inspeção de Graxa',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
 
                   if (_elementos.isNotEmpty) ...[
@@ -823,6 +1252,64 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
         _carregarDados();
       }
     });
+  }
+
+  Future<void> _salvarProblema() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() {
+        _isSavingProblema = true;
+      });
+
+      try {
+        final problemas = await DatabaseHelper.instance.getProblemasByPrensa(widget.prensaId);
+        final problemaExistente = problemas.isNotEmpty ? problemas.first : null;
+
+        final problema = Problema(
+          id: problemaExistente?.id,
+          problemaRedutorPrincipal: _problemaRedutorPrincipal ? '1' : '0',
+          comentarioRedutorPrincipal: _comentarioRedutorController.text,
+          problemaTemperatura: _problemaTemperatura ? '1' : '0',
+          comentarioTemperatura: _comentarioTemperaturaController.text,
+          problemaTamborPrincipal: _problemaTamborPrincipal ? '1' : '0',
+          comentarioTamborPrincipal: _comentarioTamborController.text,
+          lubrificanteRedutorPrincipal: _lubrificanteSelecionado,
+          graxaRolamentosZonasQuentes: _graxaRolamentosSelecionada,
+          graxaTamborPrincipal: _graxaTamborSelecionada,
+          myPressPrensaId: widget.prensaId,
+        );
+
+        if (problemaExistente != null) {
+          await DatabaseHelper.instance.updateProblema(problema);
+        } else {
+          await DatabaseHelper.instance.createProblema(problema);
+        }
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Inspeção de graxa salva com sucesso!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } catch (e) {
+        print('Erro ao salvar problema: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Erro ao salvar inspeção: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isSavingProblema = false;
+          });
+        }
+      }
+    }
   }
 
   Future<void> _finalizarCadastro() async {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/visita_model.dart';
+import '../models/problema_model.dart';
 import '../database/database_helper.dart';
 import '../services/api_service.dart';
 import '../widgets/custom_bottom_nav.dart';
@@ -58,8 +59,13 @@ class _VisitasPendentesScreenState extends State<VisitasPendentesScreen> {
       // Buscar todos os dados relacionados à visita
       final prensas =
           await DatabaseHelper.instance.getPrensasByVisita(visita.id!);
-      final problemas =
-          await DatabaseHelper.instance.getProblemasByVisita(visita.id!);
+      
+      // Buscar problemas através das prensas
+      List<Problema> problemas = [];
+      for (var prensa in prensas) {
+        final problemasPrensa = await DatabaseHelper.instance.getProblemasByPrensa(prensa.id!);
+        problemas.addAll(problemasPrensa);
+      }
 
       // Preparar dados para envio
       final dadosVisita = {
@@ -142,8 +148,13 @@ class _VisitasPendentesScreenState extends State<VisitasPendentesScreen> {
         // Buscar todos os dados relacionados à visita
         final prensas =
             await DatabaseHelper.instance.getPrensasByVisita(visita.id!);
-        final problemas =
-            await DatabaseHelper.instance.getProblemasByVisita(visita.id!);
+        
+        // Buscar problemas através das prensas
+        List<Problema> problemas = [];
+        for (var prensa in prensas) {
+          final problemasPrensa = await DatabaseHelper.instance.getProblemasByPrensa(prensa.id!);
+          problemas.addAll(problemasPrensa);
+        }
 
         // Preparar dados para envio
         final dadosVisita = {

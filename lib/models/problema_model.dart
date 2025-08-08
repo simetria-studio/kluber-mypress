@@ -7,7 +7,7 @@ class Problema {
   final String? comentarioTemperatura;
   final String problemaTamborPrincipal;
   final String? comentarioTamborPrincipal;
-  final int myPressVisitaId;
+  final int myPressPrensaId;
   final String? graxaRolamentosZonasQuentes;
   final String? graxaTamborPrincipal;
 
@@ -20,7 +20,7 @@ class Problema {
     this.comentarioTemperatura,
     required this.problemaTamborPrincipal,
     this.comentarioTamborPrincipal,
-    required this.myPressVisitaId,
+    required this.myPressPrensaId,
     this.graxaRolamentosZonasQuentes,
     this.graxaTamborPrincipal,
   });
@@ -35,7 +35,7 @@ class Problema {
       'comentario_temperatura': comentarioTemperatura,
       'problema_tambor_principal': problemaTamborPrincipal,
       'comentario_tambor_principal': comentarioTamborPrincipal,
-      'visita_id': myPressVisitaId,
+      'prensa_id': myPressPrensaId,
       'graxa_rolamentos_zonas_quentes': graxaRolamentosZonasQuentes,
       'graxa_tambor_principal': graxaTamborPrincipal,
     };
@@ -51,7 +51,7 @@ class Problema {
       comentarioTemperatura: map['comentario_temperatura'],
       problemaTamborPrincipal: map['problema_tambor_principal'],
       comentarioTamborPrincipal: map['comentario_tambor_principal'],
-      myPressVisitaId: map['visita_id'],
+      myPressPrensaId: map['prensa_id'],
       graxaRolamentosZonasQuentes: map['graxa_rolamentos_zonas_quentes'],
       graxaTamborPrincipal: map['graxa_tambor_principal'],
     );

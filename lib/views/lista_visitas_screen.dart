@@ -257,22 +257,32 @@ class _ListaVisitasScreenState extends State<ListaVisitasScreen> {
         }
       }
 
-      final problemas =
-          await DatabaseHelper.instance.getProblemasByVisita(visita.id!);
-      for (var problema in problemas) {
-        final novoProblema = Problema(
-          problemaRedutorPrincipal: problema.problemaRedutorPrincipal,
-          comentarioRedutorPrincipal: problema.comentarioRedutorPrincipal,
-          lubrificanteRedutorPrincipal: problema.lubrificanteRedutorPrincipal,
-          problemaTemperatura: problema.problemaTemperatura,
-          comentarioTemperatura: problema.comentarioTemperatura,
-          problemaTamborPrincipal: problema.problemaTamborPrincipal,
-          comentarioTamborPrincipal: problema.comentarioTamborPrincipal,
-          myPressVisitaId: novaVisitaId,
-          graxaRolamentosZonasQuentes: problema.graxaRolamentosZonasQuentes,
-          graxaTamborPrincipal: problema.graxaTamborPrincipal,
-        );
-        await DatabaseHelper.instance.createProblema(novoProblema);
+      // Duplicar problemas para cada prensa
+      final prensasOriginais = await DatabaseHelper.instance.getPrensasByVisita(visita.id!);
+      for (var prensaOriginal in prensasOriginais) {
+        final problemas = await DatabaseHelper.instance.getProblemasByPrensa(prensaOriginal.id!);
+        for (var problema in problemas) {
+          // Encontrar a prensa correspondente na nova visita
+          final prensasNovaVisita = await DatabaseHelper.instance.getPrensasByVisita(novaVisitaId);
+          // Assumindo que as prensas são criadas na mesma ordem, usar o índice
+          final index = prensasOriginais.indexOf(prensaOriginal);
+          if (index < prensasNovaVisita.length) {
+            final prensaNova = prensasNovaVisita[index];
+            final novoProblema = Problema(
+              problemaRedutorPrincipal: problema.problemaRedutorPrincipal,
+              comentarioRedutorPrincipal: problema.comentarioRedutorPrincipal,
+              lubrificanteRedutorPrincipal: problema.lubrificanteRedutorPrincipal,
+              problemaTemperatura: problema.problemaTemperatura,
+              comentarioTemperatura: problema.comentarioTemperatura,
+              problemaTamborPrincipal: problema.problemaTamborPrincipal,
+              comentarioTamborPrincipal: problema.comentarioTamborPrincipal,
+              myPressPrensaId: prensaNova.id!,
+              graxaRolamentosZonasQuentes: problema.graxaRolamentosZonasQuentes,
+              graxaTamborPrincipal: problema.graxaTamborPrincipal,
+            );
+            await DatabaseHelper.instance.createProblema(novoProblema);
+          }
+        }
       }
 
       if (mounted) {
