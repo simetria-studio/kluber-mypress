@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/prensa_model.dart';
+import '../models/temperatura_prensa_model.dart';
 import '../database/database_helper.dart';
 import 'selecionar_elemento_screen.dart';
 
@@ -28,6 +29,13 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
   final _produtoCintaController = TextEditingController();
   final _produtoCorrenteController = TextEditingController();
   final _produtoBendroadsController = TextEditingController();
+  
+  // Controllers para Temperaturas das Zonas
+  final _zona1Controller = TextEditingController();
+  final _zona2Controller = TextEditingController();
+  final _zona3Controller = TextEditingController();
+  final _zona4Controller = TextEditingController();
+  final _zona5Controller = TextEditingController();
 
   final List<String> _fabricantes = [
     'Dieffenbacher',
@@ -37,7 +45,7 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
   ];
   String? _fabricanteSelecionado;
 
-  final List<String> _tiposProdutos = ['MDF', 'HDF', 'MDP', 'OSB'];
+  final List<String> _tiposProdutos = ['MDF', 'MDF1', 'MDF2', 'MDP', 'MDP 1', 'MDP 2', 'OSB', 'HDF', 'OUTROS'];
   String? _produtoSelecionado;
 
   final List<String> _tiposProdutosCinta = [
@@ -81,6 +89,29 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
       _produtoCintaSelecionado = widget.prensa!.produtoCinta;
       _produtoCorrenteSelecionado = widget.prensa!.produtoCorrente;
       _produtoBendroadsSelecionado = widget.prensa!.produtoBendroads;
+      
+      // Carregar temperaturas se existirem
+      _carregarTemperaturas();
+    }
+  }
+
+  Future<void> _carregarTemperaturas() async {
+    if (widget.prensa?.id != null) {
+      try {
+        final temperaturas = await DatabaseHelper.instance.getTemperaturasByPrensa(widget.prensa!.id!);
+        if (temperaturas.isNotEmpty) {
+          final temperatura = temperaturas.first;
+          setState(() {
+            _zona1Controller.text = temperatura.zona1?.toString() ?? '';
+            _zona2Controller.text = temperatura.zona2?.toString() ?? '';
+            _zona3Controller.text = temperatura.zona3?.toString() ?? '';
+            _zona4Controller.text = temperatura.zona4?.toString() ?? '';
+            _zona5Controller.text = temperatura.zona5?.toString() ?? '';
+          });
+        }
+      } catch (e) {
+        print('Erro ao carregar temperaturas: $e');
+      }
     }
   }
 
@@ -109,6 +140,8 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
 
         if (widget.prensa != null) {
           await DatabaseHelper.instance.updatePrensa(prensa);
+          // Salvar temperaturas
+          await _salvarTemperaturas(widget.prensa!.id!);
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Prensa atualizada com sucesso!')),
@@ -117,6 +150,8 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
           }
         } else {
           final prensaId = await DatabaseHelper.instance.createPrensa(prensa);
+          // Salvar temperaturas
+          await _salvarTemperaturas(prensaId);
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Prensa cadastrada com sucesso!')),
@@ -205,7 +240,7 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
                   controller: _comprimentoController,
                   style: const TextStyle(color: Colors.white),
                   decoration: const InputDecoration(
-                    labelText: 'Comprimento (opcional)',
+                    labelText: 'Comprimento - m',
                     labelStyle: TextStyle(color: Colors.white),
                     prefixIcon:
                         Icon(Icons.straighten, color: Color(0xFFFABA00)),
@@ -225,7 +260,7 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
                   controller: _larguraController,
                   style: const TextStyle(color: Colors.white),
                   decoration: const InputDecoration(
-                    labelText: 'Largura (opcional)',
+                    labelText: 'Largura - m',
                     labelStyle: TextStyle(color: Colors.white),
                     prefixIcon: Icon(Icons.swap_horiz, color: Color(0xFFFABA00)),
                     suffixText: 'm',
@@ -281,9 +316,17 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
                   controller: _espressuraController,
                   style: const TextStyle(color: Colors.white),
                   decoration: const InputDecoration(
-                    labelText: 'Espessura',
+                    labelText: 'Espessura - mm',
+                    labelStyle: TextStyle(color: Colors.white),
                     prefixIcon: Icon(Icons.height, color: Color(0xFFFABA00)),
                     suffixText: 'mm',
+                    enabledBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey),
+                    ),
+                    focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFFABA00)),
+                    ),
+                    border: UnderlineInputBorder(),
                   ),
                   keyboardType: TextInputType.number,
                   validator: (value) =>
@@ -294,15 +337,28 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
                   controller: _velocidadeController,
                   style: const TextStyle(color: Colors.white),
                   decoration: const InputDecoration(
-                    labelText: 'Velocidade',
+                    labelText: 'Velocidade - m/min',
+                    labelStyle: TextStyle(color: Colors.white),
                     prefixIcon: Icon(Icons.speed, color: Color(0xFFFABA00)),
                     suffixText: 'm/min',
+                    enabledBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey),
+                    ),
+                    focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFFABA00)),
+                    ),
+                    border: UnderlineInputBorder(),
                   ),
                   keyboardType: TextInputType.number,
                   validator: (value) =>
                       value?.isEmpty ?? true ? 'Campo obrigatório' : null,
                 ),
                 const SizedBox(height: 16),
+
+                // Produtos de Lubrificação
+                _buildSectionHeader('Produtos de Lubrificação', Icons.opacity),
+                const SizedBox(height: 16),
+
                 DropdownButtonFormField<String>(
                   value: _produtoCintaSelecionado,
                   decoration: const InputDecoration(
@@ -415,6 +471,111 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
                   },
                 ),
                 const SizedBox(height: 32),
+
+                // Temperaturas das Zonas
+                _buildSectionHeader('Temperaturas das Zonas', Icons.thermostat),
+                const SizedBox(height: 16),
+
+                // Zona 1
+                TextFormField(
+                  controller: _zona1Controller,
+                  decoration: const InputDecoration(
+                    labelText: 'Zona 1 (°C)',
+                    labelStyle: TextStyle(color: Colors.white),
+                    prefixIcon: Icon(Icons.thermostat, color: Color(0xFFFABA00)),
+                    enabledBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey),
+                    ),
+                    focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFFABA00)),
+                    ),
+                    border: UnderlineInputBorder(),
+                  ),
+                  style: const TextStyle(color: Colors.white),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 16),
+
+                // Zona 2
+                TextFormField(
+                  controller: _zona2Controller,
+                  decoration: const InputDecoration(
+                    labelText: 'Zona 2 (°C)',
+                    labelStyle: TextStyle(color: Colors.white),
+                    prefixIcon: Icon(Icons.thermostat, color: Color(0xFFFABA00)),
+                    enabledBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey),
+                    ),
+                    focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFFABA00)),
+                    ),
+                    border: UnderlineInputBorder(),
+                  ),
+                  style: const TextStyle(color: Colors.white),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 16),
+
+                // Zona 3
+                TextFormField(
+                  controller: _zona3Controller,
+                  decoration: const InputDecoration(
+                    labelText: 'Zona 3 (°C)',
+                    labelStyle: TextStyle(color: Colors.white),
+                    prefixIcon: Icon(Icons.thermostat, color: Color(0xFFFABA00)),
+                    enabledBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey),
+                    ),
+                    focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFFABA00)),
+                    ),
+                    border: UnderlineInputBorder(),
+                  ),
+                  style: const TextStyle(color: Colors.white),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 16),
+
+                // Zona 4
+                TextFormField(
+                  controller: _zona4Controller,
+                  decoration: const InputDecoration(
+                    labelText: 'Zona 4 (°C)',
+                    labelStyle: TextStyle(color: Colors.white),
+                    prefixIcon: Icon(Icons.thermostat, color: Color(0xFFFABA00)),
+                    enabledBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey),
+                    ),
+                    focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFFABA00)),
+                    ),
+                    border: UnderlineInputBorder(),
+                  ),
+                  style: const TextStyle(color: Colors.white),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 16),
+
+                // Zona 5
+                TextFormField(
+                  controller: _zona5Controller,
+                  decoration: const InputDecoration(
+                    labelText: 'Zona 5 (°C)',
+                    labelStyle: TextStyle(color: Colors.white),
+                    prefixIcon: Icon(Icons.thermostat, color: Color(0xFFFABA00)),
+                    enabledBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey),
+                    ),
+                    focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFFABA00)),
+                    ),
+                    border: UnderlineInputBorder(),
+                  ),
+                  style: const TextStyle(color: Colors.white),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 32),
+
                 SizedBox(
                   width: double.infinity,
                   height: 55,
@@ -444,6 +605,65 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
     );
   }
 
+  Future<void> _salvarTemperaturas(int prensaId) async {
+    // Só salva se pelo menos uma temperatura foi preenchida
+    if (_zona1Controller.text.isNotEmpty || 
+        _zona2Controller.text.isNotEmpty || 
+        _zona3Controller.text.isNotEmpty || 
+        _zona4Controller.text.isNotEmpty || 
+        _zona5Controller.text.isNotEmpty) {
+      
+      final temperatura = TemperaturaPrensa(
+        zona1: _zona1Controller.text.isNotEmpty ? double.tryParse(_zona1Controller.text) : null,
+        zona2: _zona2Controller.text.isNotEmpty ? double.tryParse(_zona2Controller.text) : null,
+        zona3: _zona3Controller.text.isNotEmpty ? double.tryParse(_zona3Controller.text) : null,
+        zona4: _zona4Controller.text.isNotEmpty ? double.tryParse(_zona4Controller.text) : null,
+        zona5: _zona5Controller.text.isNotEmpty ? double.tryParse(_zona5Controller.text) : null,
+        prensaId: prensaId,
+        dataRegistro: DateTime.now().toString().split(' ')[0], // Formato YYYY-MM-DD
+      );
+
+      // Verificar se já existe temperatura para essa prensa
+      final temperaturasExistentes = await DatabaseHelper.instance.getTemperaturasByPrensa(prensaId);
+      
+      if (temperaturasExistentes.isNotEmpty) {
+        // Atualizar temperatura existente
+        final temperaturaExistente = temperaturasExistentes.first;
+        final temperaturaAtualizada = TemperaturaPrensa(
+          id: temperaturaExistente.id,
+          zona1: temperatura.zona1,
+          zona2: temperatura.zona2,
+          zona3: temperatura.zona3,
+          zona4: temperatura.zona4,
+          zona5: temperatura.zona5,
+          prensaId: prensaId,
+          dataRegistro: temperatura.dataRegistro,
+        );
+        await DatabaseHelper.instance.updateTemperaturaPrensa(temperaturaAtualizada);
+      } else {
+        // Criar nova temperatura
+        await DatabaseHelper.instance.createTemperaturaPrensa(temperatura);
+      }
+    }
+  }
+
+  Widget _buildSectionHeader(String title, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, color: const Color(0xFFFABA00), size: 24),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: const TextStyle(
+            color: Color(0xFFFABA00),
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   void dispose() {
     _fabricanteController.dispose();
@@ -455,6 +675,11 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
     _produtoCintaController.dispose();
     _produtoCorrenteController.dispose();
     _produtoBendroadsController.dispose();
+    _zona1Controller.dispose();
+    _zona2Controller.dispose();
+    _zona3Controller.dispose();
+    _zona4Controller.dispose();
+    _zona5Controller.dispose();
     super.dispose();
   }
 }

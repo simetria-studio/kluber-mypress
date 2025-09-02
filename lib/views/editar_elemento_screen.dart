@@ -25,18 +25,37 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
   bool _isLoading = false;
   bool _hasChanges = false;
 
+  // Lista de tipos de elementos
+  final List<String> _tiposElementos = [
+    'Bend rods',
+    'Cinta metálica',
+    'Corrente'
+  ];
+  String? _tipoElementoSelecionado;
+
+  // Lista de posições - será ajustada dinamicamente baseada no fabricante
+  List<String> _posicoes = ['Superior', 'Inferior'];
+  String? _posicaoSelecionada;
+  
+  // Variável para armazenar o fabricante da prensa
+  String? _fabricantePrensa;
+
   @override
   void initState() {
     super.initState();
     _carregarDadosElemento();
     print('entrou no initstate');
     // Monitorar mudanças
-    _consumo1Controller.addListener(_checkChanges);
+        _consumo1Controller.addListener(_checkChanges);
     _consumo2Controller.addListener(_checkChanges);
     _consumo3Controller.addListener(_checkChanges);
     _tomaController.addListener(_checkChanges);
-    _posicaoController.addListener(_checkChanges);
-    _tipoController.addListener(_checkChanges);
+
+    // Adicionar listeners para cálculo automático da soma
+    _consumo2Controller.addListener(_calcularSoma);
+    _consumo3Controller.addListener(_calcularSoma);
+    
+    _carregarFabricantePrensa();
   }
 
   void _carregarDadosElemento() {
@@ -46,6 +65,35 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
     _tomaController.text = widget.elemento.toma;
     _posicaoController.text = widget.elemento.posicao;
     _tipoController.text = widget.elemento.tipo;
+    
+    // Carregar valores para os dropdowns
+    _tipoElementoSelecionado = widget.elemento.tipo;
+    _posicaoSelecionada = widget.elemento.posicao != 'N/A' ? widget.elemento.posicao : null;
+  }
+
+  Future<void> _carregarFabricantePrensa() async {
+    try {
+      // Buscar a prensa para obter o fabricante
+      final prensas = await DatabaseHelper.instance.getAllPrensas();
+      final prensa = prensas.firstWhere((p) => p.id == widget.elemento.prensaId);
+      
+      setState(() {
+        _fabricantePrensa = prensa.fabricante;
+        
+        // Se for Dieffenbacher, ajustar as posições
+        if (prensa.fabricante == 'Dieffenbacher') {
+          _posicoes = ['Superior'];
+        } else {
+          _posicoes = ['Superior', 'Inferior'];
+        }
+      });
+    } catch (e) {
+      print('Erro ao carregar fabricante da prensa: $e');
+      // Em caso de erro, manter as posições padrão
+      setState(() {
+        _posicoes = ['Superior', 'Inferior'];
+      });
+    }
   }
 
   void _checkChanges() {
@@ -54,13 +102,24 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
             _consumo2Controller.text != widget.elemento.consumo2.toString() ||
             _consumo3Controller.text != widget.elemento.consumo3.toString() ||
             _tomaController.text != widget.elemento.toma ||
-            _posicaoController.text != widget.elemento.posicao ||
-            _tipoController.text != widget.elemento.tipo;
+            _posicaoSelecionada != (widget.elemento.posicao != 'N/A' ? widget.elemento.posicao : null) ||
+            _tipoElementoSelecionado != widget.elemento.tipo;
 
     if (hasChanges != _hasChanges) {
       setState(() {
         _hasChanges = hasChanges;
       });
+    }
+  }
+
+  void _calcularSoma() {
+    try {
+      final consumo2 = double.tryParse(_consumo2Controller.text) ?? 0;
+      final consumo3 = double.tryParse(_consumo3Controller.text) ?? 0;
+      final soma = consumo2 + consumo3;
+      _tomaController.text = soma.toString();
+    } catch (e) {
+      _tomaController.text = '';
     }
   }
 
@@ -71,14 +130,28 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
       });
 
       try {
+        // Verificar se os campos obrigatórios estão preenchidos
+        if (_tipoElementoSelecionado == null) {
+          throw Exception('Por favor, selecione o tipo do elemento');
+        }
+
+        if (_tipoElementoSelecionado != 'Bend rods' && _posicaoSelecionada == null) {
+          throw Exception('Por favor, selecione a posição');
+        }
+
+        // Para Dieffenbacher, sempre exigir posição
+        if (_fabricantePrensa == 'Dieffenbacher' && _posicaoSelecionada == null) {
+          throw Exception('Por favor, selecione a posição');
+        }
+
         final elementoAtualizado = Elemento(
           id: widget.elemento.id,
           consumo1: double.parse(_consumo1Controller.text),
           consumo2: double.parse(_consumo2Controller.text),
           consumo3: double.parse(_consumo3Controller.text),
           toma: _tomaController.text,
-          posicao: _posicaoController.text,
-          tipo: _tipoController.text,
+          posicao: _posicaoSelecionada ?? 'N/A', // Usar 'N/A' como valor padrão para Bend rods
+          tipo: _tipoElementoSelecionado!,
           prensaId: widget.elemento.prensaId,
         );
 
@@ -240,13 +313,97 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        DropdownButtonFormField<String>(
+                          value: _tipoElementoSelecionado,
+                          decoration: const InputDecoration(
+                            labelText: 'Tipo',
+                            labelStyle: TextStyle(color: Colors.white),
+                            prefixIcon: Icon(Icons.category, color: Color(0xFFFABA00)),
+                            enabledBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Colors.grey),
+                            ),
+                            focusedBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Color(0xFFFABA00)),
+                            ),
+                            border: UnderlineInputBorder(),
+                          ),
+                          icon: const Icon(Icons.arrow_drop_down,
+                              color: Color(0xFFFABA00)),
+                          dropdownColor: Colors.grey[900],
+                          style: const TextStyle(color: Colors.white),
+                          items: _tiposElementos.map((String tipo) {
+                            return DropdownMenuItem<String>(
+                              value: tipo,
+                              child: Text(tipo),
+                            );
+                          }).toList(),
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              _tipoElementoSelecionado = newValue;
+                              if (newValue != 'Bend rods') {
+                                _posicaoSelecionada = null;
+                              }
+                            });
+                          },
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Por favor, selecione o tipo do elemento';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        Visibility(
+                          visible: _tipoElementoSelecionado != 'Bend rods' || _fabricantePrensa == 'Dieffenbacher',
+                          child: DropdownButtonFormField<String>(
+                            value: _posicaoSelecionada,
+                            decoration: const InputDecoration(
+                              labelText: 'Posição',
+                              labelStyle: TextStyle(color: Colors.white),
+                              prefixIcon: Icon(Icons.place, color: Color(0xFFFABA00)),
+                              enabledBorder: UnderlineInputBorder(
+                                borderSide: BorderSide(color: Colors.grey),
+                              ),
+                              focusedBorder: UnderlineInputBorder(
+                                borderSide: BorderSide(color: Color(0xFFFABA00)),
+                              ),
+                              border: UnderlineInputBorder(),
+                            ),
+                            icon: const Icon(Icons.arrow_drop_down,
+                                color: Color(0xFFFABA00)),
+                            dropdownColor: Colors.grey[900],
+                            style: const TextStyle(color: Colors.white),
+                            items: _posicoes.map((String posicao) {
+                              return DropdownMenuItem<String>(
+                                value: posicao,
+                                child: Text(posicao),
+                              );
+                            }).toList(),
+                            onChanged: (String? newValue) {
+                              setState(() {
+                                _posicaoSelecionada = newValue;
+                              });
+                            },
+                            validator: (value) {
+                              if (_tipoElementoSelecionado != 'Bend rods' && (value == null || value.isEmpty)) {
+                                return 'Por favor, selecione a posição';
+                              }
+                              // Para Dieffenbacher, sempre exigir posição
+                              if (_fabricantePrensa == 'Dieffenbacher' && (value == null || value.isEmpty)) {
+                                return 'Por favor, selecione a posição';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 16),
                         TextFormField(
                           controller: _consumo1Controller,
                           decoration: const InputDecoration(
                             labelText: 'Consumo Nominal',
                             labelStyle: TextStyle(color: Colors.white),
                             prefixIcon: Icon(Icons.speed, color: Color(0xFFFABA00)),
-                            suffixText: 'g/h',
+                            suffixText: 'l/D',
                           ),
                           style: const TextStyle(color: Colors.white),
                           keyboardType: TextInputType.number,
@@ -257,6 +414,7 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
                             return null;
                           },
                         ),
+
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _consumo2Controller,
@@ -264,7 +422,14 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
                             labelText: 'Consumo Real',
                             labelStyle: TextStyle(color: Colors.white),
                             prefixIcon: Icon(Icons.speed, color: Color(0xFFFABA00)),
-                            suffixText: 'g/h',
+                            suffixText: 'l/D',
+                            enabledBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Colors.grey),
+                            ),
+                            focusedBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Color(0xFFFABA00)),
+                            ),
+                            border: UnderlineInputBorder(),
                           ),
                           style: const TextStyle(color: Colors.white),
                           keyboardType: TextInputType.number,
@@ -282,7 +447,14 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
                             labelText: 'Consumo Real Adicional',
                             labelStyle: TextStyle(color: Colors.white),
                             prefixIcon: Icon(Icons.speed, color: Color(0xFFFABA00)),
-                            suffixText: 'g/h',
+                            suffixText: 'l/D',
+                            enabledBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Colors.grey),
+                            ),
+                            focusedBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Color(0xFFFABA00)),
+                            ),
+                            border: UnderlineInputBorder(),
                           ),
                           style: const TextStyle(color: Colors.white),
                           keyboardType: TextInputType.number,
@@ -302,42 +474,7 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
                             prefixIcon: Icon(Icons.settings_input_component, color: Color(0xFFFABA00)),
                           ),
                           style: const TextStyle(color: Colors.white),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Por favor, insira a soma';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _posicaoController,
-                          decoration: const InputDecoration(
-                            labelText: 'Posição',
-                            labelStyle: TextStyle(color: Colors.white),
-                          ),
-                          style: const TextStyle(color: Colors.white),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Por favor, insira a posição';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _tipoController,
-                          decoration: const InputDecoration(
-                            labelText: 'Tipo',
-                            labelStyle: TextStyle(color: Colors.white),
-                          ),
-                          style: const TextStyle(color: Colors.white),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Por favor, insira o tipo';
-                            }
-                            return null;
-                          },
+                          enabled: false,
                         ),
                         const SizedBox(height: 24),
                         SizedBox(
@@ -385,8 +522,11 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
     _consumo2Controller.dispose();
     _consumo3Controller.dispose();
     _tomaController.dispose();
-    _posicaoController.dispose();
-    _tipoController.dispose();
+    
+    // Remover listeners de cálculo da soma
+    _consumo2Controller.removeListener(_calcularSoma);
+    _consumo3Controller.removeListener(_calcularSoma);
+    
     super.dispose();
   }
 }

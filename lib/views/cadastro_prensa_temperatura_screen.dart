@@ -50,7 +50,7 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
   ];
   String? _fabricanteSelecionado;
 
-  final List<String> _tiposProdutos = ['MDF', 'HDF', 'MDP', 'OSB'];
+  final List<String> _tiposProdutos = ['MDF', 'MDF1', 'MDF2', 'MDP', 'MDP 1', 'MDP 2', 'OSB', 'HDF', 'OUTROS'];
   String? _produtoSelecionado;
 
   final List<String> _tiposProdutosCinta = [
@@ -295,7 +295,7 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
                             child: TextFormField(
                               controller: _comprimentoController,
                               decoration: const InputDecoration(
-                                labelText: 'Comprimento (opcional)',
+                                labelText: 'Comprimento - m',
                                 labelStyle: TextStyle(color: Colors.white),
                                 prefixIcon: Icon(Icons.straighten, color: Color(0xFFFABA00)),
                               ),
@@ -308,7 +308,7 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
                             child: TextFormField(
                               controller: _larguraController,
                               decoration: const InputDecoration(
-                                labelText: 'Largura (opcional)',
+                                labelText: 'Largura - m',
                                 labelStyle: TextStyle(color: Colors.white),
                                 prefixIcon: Icon(Icons.straighten, color: Color(0xFFFABA00)),
                               ),
@@ -324,7 +324,7 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
                       TextFormField(
                         controller: _espressuraController,
                         decoration: const InputDecoration(
-                          labelText: 'Espessura',
+                          labelText: 'Espessura - mm',
                           labelStyle: TextStyle(color: Colors.white),
                           prefixIcon: Icon(Icons.height, color: Color(0xFFFABA00)),
                         ),

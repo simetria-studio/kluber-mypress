@@ -31,15 +31,44 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
   ];
   String? _tipoElementoSelecionado;
 
-  // Adicione esta lista de posições
-  final List<String> _posicoes = ['Superior', 'Inferior'];
+  // Lista de posições - será ajustada dinamicamente baseada no fabricante
+  List<String> _posicoes = ['Superior', 'Inferior'];
   String? _posicaoSelecionada;
+  
+  // Variável para armazenar o fabricante da prensa
+  String? _fabricantePrensa;
 
   @override
   void initState() {
     super.initState();
     _consumo2Controller.addListener(_calcularSoma);
     _consumo3Controller.addListener(_calcularSoma);
+    _carregarFabricantePrensa();
+  }
+
+  Future<void> _carregarFabricantePrensa() async {
+    try {
+      // Buscar a prensa para obter o fabricante
+      final prensas = await DatabaseHelper.instance.getAllPrensas();
+      final prensa = prensas.firstWhere((p) => p.id == widget.prensaId);
+      
+      setState(() {
+        _fabricantePrensa = prensa.fabricante;
+        
+        // Se for Dieffenbacher, ajustar as posições
+        if (prensa.fabricante == 'Dieffenbacher') {
+          _posicoes = ['Superior'];
+        } else {
+          _posicoes = ['Superior', 'Inferior'];
+        }
+      });
+    } catch (e) {
+      print('Erro ao carregar fabricante da prensa: $e');
+      // Em caso de erro, manter as posições padrão
+      setState(() {
+        _posicoes = ['Superior', 'Inferior'];
+      });
+    }
   }
 
   void _calcularSoma() {
@@ -62,6 +91,11 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
         }
 
         if (_tipoElementoSelecionado != 'Bend rods' && _posicaoSelecionada == null) {
+          throw Exception('Por favor, selecione a posição');
+        }
+
+        // Para Dieffenbacher, sempre exigir posição
+        if (_fabricantePrensa == 'Dieffenbacher' && _posicaoSelecionada == null) {
           throw Exception('Por favor, selecione a posição');
         }
 
@@ -153,7 +187,7 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
                 ),
                 const SizedBox(height: 16),
                 Visibility(
-                  visible: _tipoElementoSelecionado != 'Bend rods',
+                  visible: _tipoElementoSelecionado != 'Bend rods' || _fabricantePrensa == 'Dieffenbacher',
                   child: DropdownButtonFormField<String>(
                     value: _posicaoSelecionada,
                     decoration: const InputDecoration(
@@ -187,6 +221,10 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
                       if (_tipoElementoSelecionado != 'Bend rods' && (value == null || value.isEmpty)) {
                         return 'Por favor, selecione a posição';
                       }
+                      // Para Dieffenbacher, sempre exigir posição
+                      if (_fabricantePrensa == 'Dieffenbacher' && (value == null || value.isEmpty)) {
+                        return 'Por favor, selecione a posição';
+                      }
                       return null;
                     },
                   ),
@@ -198,7 +236,7 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Consumo Nominal',
                     prefixIcon: Icon(Icons.speed, color: Color(0xFFFABA00)),
-                    suffixText: 'g/h',
+                    suffixText: 'l/D',
                   ),
                   keyboardType: TextInputType.number,
                   validator: (value) =>
@@ -211,7 +249,7 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Consumo Real',
                     prefixIcon: Icon(Icons.speed, color: Color(0xFFFABA00)),
-                    suffixText: 'g/h',
+                    suffixText: 'l/D',
                   ),
                   keyboardType: TextInputType.number,
                   validator: (value) =>
@@ -224,7 +262,7 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Consumo Real Adicional',
                     prefixIcon: Icon(Icons.speed, color: Color(0xFFFABA00)),
-                    suffixText: 'g/h',
+                    suffixText: 'l/D',
                   ),
                   keyboardType: TextInputType.number,
                   validator: (value) =>

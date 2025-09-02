@@ -455,43 +455,106 @@ class DatabaseHelper {
   Future<void> criarElementosPadrao(int prensaId) async {
     final db = await instance.database;
     
+    // Primeiro, buscar a prensa para verificar o fabricante
+    final prensasResult = await db.query(
+      'prensas',
+      where: 'id = ?',
+      whereArgs: [prensaId],
+    );
+    
+    if (prensasResult.isEmpty) {
+      throw Exception('Prensa não encontrada');
+    }
+    
+    final prensa = prensasResult.first;
+    final fabricante = prensa['fabricante'] as String;
+    
     // Verificar se já existem elementos padrão para esta prensa
     final existingElements = await db.query(
       'elementos',
-      where: 'prensa_id = ? AND tipo = ? AND (posicao = ? OR posicao = ?)',
-      whereArgs: [prensaId, 'Cinta metálica', 'Superior', 'Inferior'],
+      where: 'prensa_id = ?',
+      whereArgs: [prensaId],
     );
     
     // Se já existem elementos padrão, lançar exceção informativa
     if (existingElements.isNotEmpty) {
-      throw Exception('Elementos padrão de cinta metálica já existem para esta prensa');
+      throw Exception('Elementos padrão já existem para esta prensa');
     }
     
-    // Criar elemento padrão: Cinta metálica superior
-    final elementoSuperior = Elemento(
-      consumo1: 1.0,
-      consumo2: 1.0,
-      consumo3: 1.0,
-      toma: '2.0', // soma dos consumos 2 e 3
-      posicao: 'Superior',
-      tipo: 'Cinta metálica',
-      prensaId: prensaId,
-    );
-    
-    // Criar elemento padrão: Cinta metálica inferior
-    final elementoInferior = Elemento(
-      consumo1: 1.0,
-      consumo2: 1.0,
-      consumo3: 1.0,
-      toma: '2.0', // soma dos consumos 2 e 3
-      posicao: 'Inferior',
-      tipo: 'Cinta metálica',
-      prensaId: prensaId,
-    );
-    
-    // Inserir elementos padrão
-    await db.insert('elementos', elementoSuperior.toMap());
-    await db.insert('elementos', elementoInferior.toMap());
+    // Se for Dieffenbacher, criar apenas um elemento total
+    if (fabricante == 'Dieffenbacher') {
+      final elementoTotal = Elemento(
+        consumo1: 1.0,
+        consumo2: 1.0,
+        consumo3: 1.0,
+        toma: '2.0', // soma dos consumos 2 e 3
+        posicao: 'Superior', // posição única para Dieffenbacher
+        tipo: 'Cinta metálica',
+        prensaId: prensaId,
+      );
+      
+      // Inserir apenas o elemento total
+      await db.insert('elementos', elementoTotal.toMap());
+    } else {
+      // Para outros fabricantes, criar elementos na ordem específica
+      final elementosPadrao = [
+        // 1. Cinta Superior
+        Elemento(
+          consumo1: 1.0,
+          consumo2: 1.0,
+          consumo3: 1.0,
+          toma: '2.0',
+          posicao: 'Superior',
+          tipo: 'Cinta metálica',
+          prensaId: prensaId,
+        ),
+        // 2. Cinta Inferior
+        Elemento(
+          consumo1: 1.0,
+          consumo2: 1.0,
+          consumo3: 1.0,
+          toma: '2.0',
+          posicao: 'Inferior',
+          tipo: 'Cinta metálica',
+          prensaId: prensaId,
+        ),
+        // 3. Corrente Superior
+        Elemento(
+          consumo1: 1.0,
+          consumo2: 1.0,
+          consumo3: 1.0,
+          toma: '2.0',
+          posicao: 'Superior',
+          tipo: 'Corrente',
+          prensaId: prensaId,
+        ),
+        // 4. Corrente Inferior
+        Elemento(
+          consumo1: 1.0,
+          consumo2: 1.0,
+          consumo3: 1.0,
+          toma: '2.0',
+          posicao: 'Inferior',
+          tipo: 'Corrente',
+          prensaId: prensaId,
+        ),
+        // 5. Bend rods
+        Elemento(
+          consumo1: 1.0,
+          consumo2: 1.0,
+          consumo3: 1.0,
+          toma: '2.0',
+          posicao: 'N/A', // Bend rods não tem posição
+          tipo: 'Bend rods',
+          prensaId: prensaId,
+        ),
+      ];
+      
+      // Inserir todos os elementos padrão na ordem
+      for (final elemento in elementosPadrao) {
+        await db.insert('elementos', elemento.toMap());
+      }
+    }
   }
 
   Future<List<Elemento>> getElementsByPrensa(int prensaId) async {
@@ -500,6 +563,7 @@ class DatabaseHelper {
       'elementos',
       where: 'prensa_id = ?',
       whereArgs: [prensaId],
+      orderBy: 'id ASC', // Garantir ordem de criação
     );
     return List.generate(maps.length, (i) => Elemento.fromMap(maps[i]));
   }
