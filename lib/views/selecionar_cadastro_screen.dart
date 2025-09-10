@@ -526,7 +526,7 @@ class _SelecionarCadastroScreenState extends State<SelecionarCadastroScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Inspeção de Graxa Relatados',
+                    'Demais Aplicações Relatados',
                     style: TextStyle(
                       color: Color(0xFFFABA00),
                       fontSize: 16,
@@ -570,7 +570,7 @@ class _SelecionarCadastroScreenState extends State<SelecionarCadastroScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
-                          'Inspeção de Graxa',
+                          'Demais Aplicações',
                           style: TextStyle(
                             color: Color(0xFFFABA00),
                             fontSize: 16,
@@ -596,7 +596,7 @@ class _SelecionarCadastroScreenState extends State<SelecionarCadastroScreen> {
                     ),
                     const SizedBox(height: 16),
                     _buildProblemaItem(
-                      'Redutor Principal',
+                      'Lubrificante do Redutor Principal',
                       problema.problemaRedutorPrincipal == '1',
                       problema.comentarioRedutorPrincipal,
                       problema.lubrificanteRedutorPrincipal,

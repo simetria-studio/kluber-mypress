@@ -373,7 +373,7 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
                       TextFormField(
                         controller: _velocidadeController,
                         decoration: const InputDecoration(
-                          labelText: 'Velocidade',
+                          labelText: 'Velocidade - mm/s',
                           labelStyle: TextStyle(color: Colors.white),
                           prefixIcon: Icon(Icons.speed, color: Color(0xFFFABA00)),
                         ),

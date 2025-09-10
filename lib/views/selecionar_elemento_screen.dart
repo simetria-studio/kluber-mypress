@@ -31,7 +31,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
   bool _isLoading = true;
   int _currentIndex = 0;
 
-  // Variáveis para inspeção de graxa
+  // Variáveis para Demais Aplicações
   final _formKey = GlobalKey<FormState>();
   bool _problemaRedutorPrincipal = false;
   bool _problemaTemperatura = false;
@@ -370,24 +370,24 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildOptionCard(
-                    context,
-                    title: 'Novo Elemento',
-                    description: 'Adicione um novo elemento para esta prensa',
-                    icon: Icons.add_circle_outline,
-                    onTap: () async {
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              CadastroElementoScreen(prensaId: widget.prensaId),
-                        ),
-                      );
-                      if (result == true) {
-                        _carregarDados();
-                      }
-                    },
-                  ),
+                  // _buildOptionCard(
+                  //   context,
+                  //   title: 'Novo Elemento',
+                  //   description: 'Adicione um novo elemento para esta prensa',
+                  //   icon: Icons.add_circle_outline,
+                  //   onTap: () async {
+                  //     final result = await Navigator.push(
+                  //       context,
+                  //       MaterialPageRoute(
+                  //         builder: (context) =>
+                  //             CadastroElementoScreen(prensaId: widget.prensaId),
+                  //       ),
+                  //     );
+                  //     if (result == true) {
+                  //       _carregarDados();
+                  //     }
+                  //   },
+                  // ),
 
                   const SizedBox(height: 16),
 
@@ -594,14 +594,14 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                     const SizedBox(height: 24),
                   ],
 
-                  // Formulário de Inspeção de Graxa
+                  // Formulário de Demais Aplicações
                   Form(
                     key: _formKey,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Inspeção de Graxa',
+                          'Demais Aplicações',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 20,
@@ -610,7 +610,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                         ),
                         const SizedBox(height: 16),
                         
-                        // Redutor Principal
+                        // Lubrificante do Redutor Principal
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
@@ -632,7 +632,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                                   ),
                                   const SizedBox(width: 8),
                                   const Text(
-                                    'Redutor Principal',
+                                    'Lubrificante do Redutor Principal',
                                     style: TextStyle(
                                       color: Color(0xFFFABA00),
                                       fontSize: 18,
@@ -716,7 +716,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                                   ),
                                   const SizedBox(width: 8),
                                   const Text(
-                                    'Temperatura',
+                                    'Graxa da Zona Quente',
                                     style: TextStyle(
                                       color: Color(0xFFFABA00),
                                       fontSize: 18,
@@ -800,7 +800,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                                   ),
                                   const SizedBox(width: 8),
                                   const Text(
-                                    'Tambor Principal',
+                                    'Lubrificante do Tambor Principal',
                                     style: TextStyle(
                                       color: Color(0xFFFABA00),
                                       fontSize: 18,
@@ -885,7 +885,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                                     ),
                                   )
                                 : const Text(
-                                    'Salvar Inspeção de Graxa',
+                                    'Salvar Demais Aplicações',
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
@@ -1223,7 +1223,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Inspeção de graxa salva com sucesso!'),
+              content: Text('Demais Aplicações salva com sucesso!'),
               backgroundColor: Colors.green,
             ),
           );

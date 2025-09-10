@@ -137,7 +137,7 @@ class _CadastroProblemaScreenState extends State<CadastroProblemaScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         title: const Text(
-          'Inspeção de Graxa',
+          'Demais Aplicações',
           style: TextStyle(color: Color(0xFFFABA00)),
         ),
         iconTheme: const IconThemeData(color: Color(0xFFFABA00)),
@@ -163,7 +163,7 @@ class _CadastroProblemaScreenState extends State<CadastroProblemaScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Redutor Principal',
+                        'Lubrificante do Redutor Principal',
                         style: TextStyle(
                           color: Color(0xFFFABA00),
                           fontSize: 18,
@@ -174,7 +174,7 @@ class _CadastroProblemaScreenState extends State<CadastroProblemaScreen> {
                       DropdownButtonFormField<String>(
                         value: _lubrificanteSelecionado,
                         decoration: const InputDecoration(
-                          labelText: 'Lubrificante do Redutor Principal',
+                          labelText: 'Lubrificante do Lubrificante do Redutor Principal',
                           labelStyle: TextStyle(color: Colors.white),
                           prefixIcon:
                               Icon(Icons.oil_barrel, color: Color(0xFFFABA00)),
@@ -206,7 +206,7 @@ class _CadastroProblemaScreenState extends State<CadastroProblemaScreen> {
                       Row(
                         children: [
                           const Text(
-                            'Problema no redutor principal',
+                            'Problema no Lubrificante do Redutor Principal',
                             style: TextStyle(color: Colors.white),
                           ),
                           const Spacer(),
@@ -230,7 +230,7 @@ class _CadastroProblemaScreenState extends State<CadastroProblemaScreen> {
                             maxLines: 3,
                             decoration: InputDecoration(
                               hintText:
-                                  'Descreva o problema no redutor principal...',
+                                  'Descreva o problema no Lubrificante do Redutor Principal...',
                               hintStyle: TextStyle(color: Colors.grey[400]),
                               filled: true,
                               fillColor: Colors.grey[900],
