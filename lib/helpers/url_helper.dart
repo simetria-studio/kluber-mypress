@@ -1,5 +1,5 @@
 class UrlHelper {
-  static const bool _isProduction = true; // Altere para true em produção
+  static const bool _isProduction = false; // Altere para true em produção
 
   static const String _baseUrlProduction = 'https://kluber.x-erp.com.br/api';
   static const String _baseUrlDevelopment = 'http://10.0.2.2:8000/api';

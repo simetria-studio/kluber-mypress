@@ -7,6 +7,8 @@ class Elemento {
   final String posicao;
   final String tipo;
   final int prensaId;
+  final String? consumoOleo;
+  final String? contaminacao;
 
   Elemento({
     this.id,
@@ -17,6 +19,8 @@ class Elemento {
     required this.posicao,
     required this.tipo,
     required this.prensaId,
+    this.consumoOleo,
+    this.contaminacao,
   });
 
   Map<String, dynamic> toMap() {
@@ -29,6 +33,8 @@ class Elemento {
       'posicao': posicao,
       'tipo': tipo,
       'prensa_id': prensaId,
+      'consumo_oleo': consumoOleo,
+      'contaminacao': contaminacao,
     };
   }
 
@@ -42,6 +48,8 @@ class Elemento {
       posicao: map['posicao'],
       tipo: map['tipo'],
       prensaId: map['prensa_id'],
+      consumoOleo: map['consumo_oleo'],
+      contaminacao: map['contaminacao'],
     );
   }
 } 

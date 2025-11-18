@@ -36,6 +36,9 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
   final _zona3Controller = TextEditingController();
   final _zona4Controller = TextEditingController();
   final _zona5Controller = TextEditingController();
+  
+  // Controller para Comentário
+  final _comentarioController = TextEditingController();
 
   final List<String> _fabricantes = [
     'Dieffenbacher',
@@ -89,6 +92,7 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
       _produtoCintaSelecionado = widget.prensa!.produtoCinta;
       _produtoCorrenteSelecionado = widget.prensa!.produtoCorrente;
       _produtoBendroadsSelecionado = widget.prensa!.produtoBendroads;
+      _comentarioController.text = widget.prensa!.comentario ?? '';
       
       // Carregar temperaturas se existirem
       _carregarTemperaturas();
@@ -136,6 +140,7 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
           produtoCorrente: _produtoCorrenteSelecionado!,
           produtoBendroads: _produtoBendroadsSelecionado!,
           torque: null,
+          comentario: _comentarioController.text.isNotEmpty ? _comentarioController.text : null,
         );
 
         if (widget.prensa != null) {
@@ -152,20 +157,37 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
           final prensaId = await DatabaseHelper.instance.createPrensa(prensa);
           // Salvar temperaturas
           await _salvarTemperaturas(prensaId);
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Prensa cadastrada com sucesso!')),
-            );
-            await Future.delayed(const Duration(milliseconds: 500));
+          
+          // Se for Kusters, criar elementos automaticamente e não navegar para seleção
+          if (_fabricanteSelecionado == 'Kusters') {
+            try {
+              await DatabaseHelper.instance.criarElementosPadrao(prensaId);
+            } catch (e) {
+              print('Erro ao criar elementos padrão para Kusters: $e');
+            }
             if (mounted) {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => SelecionarElementoScreen(
-                    prensaId: prensaId,
-                  ),
-                ),
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Prensa cadastrada com sucesso!')),
               );
+              Navigator.pop(context, true);
+            }
+          } else {
+            // Para outros fabricantes, navegar para seleção de elementos
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Prensa cadastrada com sucesso!')),
+              );
+              await Future.delayed(const Duration(milliseconds: 500));
+              if (mounted) {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SelecionarElementoScreen(
+                      prensaId: prensaId,
+                    ),
+                  ),
+                );
+              }
             }
           }
         }
@@ -472,6 +494,27 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
                 ),
                 const SizedBox(height: 32),
 
+                // Campo de Comentário
+                TextFormField(
+                  controller: _comentarioController,
+                  decoration: const InputDecoration(
+                    labelText: 'Comentário',
+                    labelStyle: TextStyle(color: Colors.white),
+                    prefixIcon: Icon(Icons.comment, color: Color(0xFFFABA00)),
+                    enabledBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey),
+                    ),
+                    focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFFABA00)),
+                    ),
+                    border: UnderlineInputBorder(),
+                  ),
+                  style: const TextStyle(color: Colors.white),
+                  maxLines: 3,
+                  keyboardType: TextInputType.multiline,
+                ),
+                const SizedBox(height: 32),
+
                 // Temperaturas das Zonas
                 _buildSectionHeader('Temperaturas das Zonas', Icons.thermostat),
                 const SizedBox(height: 16),
@@ -680,6 +723,7 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
     _zona3Controller.dispose();
     _zona4Controller.dispose();
     _zona5Controller.dispose();
+    _comentarioController.dispose();
     super.dispose();
   }
 }

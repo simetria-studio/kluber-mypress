@@ -40,6 +40,9 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
   final _zona3Controller = TextEditingController();
   final _zona4Controller = TextEditingController();
   final _zona5Controller = TextEditingController();
+  
+  // Controller para Comentário
+  final _comentarioController = TextEditingController();
 
   // Dropdowns para Prensa
   final List<String> _fabricantes = [
@@ -101,6 +104,7 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
       _produtoCintaSelecionado = widget.prensa!.produtoCinta;
       _produtoCorrenteSelecionado = widget.prensa!.produtoCorrente;
       _produtoBendroadsSelecionado = widget.prensa!.produtoBendroads;
+      _comentarioController.text = widget.prensa!.comentario ?? '';
     }
 
     if (widget.temperatura != null) {
@@ -138,6 +142,7 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
           produtoCorrente: _produtoCorrenteSelecionado!,
           produtoBendroads: _produtoBendroadsSelecionado!,
           torque: null,
+          comentario: _comentarioController.text.isNotEmpty ? _comentarioController.text : null,
         );
 
         int prensaId;
@@ -480,6 +485,27 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
                           return null;
                         },
                       ),
+                      const SizedBox(height: 32),
+
+                      // Campo de Comentário
+                      TextFormField(
+                        controller: _comentarioController,
+                        decoration: const InputDecoration(
+                          labelText: 'Comentário',
+                          labelStyle: TextStyle(color: Colors.white),
+                          prefixIcon: Icon(Icons.comment, color: Color(0xFFFABA00)),
+                          enabledBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(color: Colors.grey),
+                          ),
+                          focusedBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(color: Color(0xFFFABA00)),
+                          ),
+                          border: UnderlineInputBorder(),
+                        ),
+                        style: const TextStyle(color: Colors.white),
+                        maxLines: 3,
+                        keyboardType: TextInputType.multiline,
+                      ),
 
                       // Seção de Temperaturas
                       if (_showTemperaturaSection) ...[
@@ -626,6 +652,7 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
     _zona3Controller.dispose();
     _zona4Controller.dispose();
     _zona5Controller.dispose();
+    _comentarioController.dispose();
     super.dispose();
   }
 } 

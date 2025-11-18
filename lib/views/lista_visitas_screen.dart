@@ -8,6 +8,10 @@ import 'selecionar_cadastro_screen.dart';
 import '../models/prensa_model.dart';
 import '../models/elemento_model.dart';
 import '../models/problema_model.dart';
+import '../models/temperatura_elemento_model.dart';
+import '../models/temperatura_prensa_model.dart';
+import '../models/comentario_elemento_model.dart';
+import '../models/anexo_comentario_model.dart';
 
 class ListaVisitasScreen extends StatefulWidget {
   const ListaVisitasScreen({super.key});
@@ -135,6 +139,14 @@ class _ListaVisitasScreenState extends State<ListaVisitasScreen> {
                                     ),
                                     IconButton(
                                       icon: const Icon(
+                                        Icons.delete_outline,
+                                        color: Colors.red,
+                                      ),
+                                      onPressed: () => _excluirVisita(visita),
+                                      tooltip: 'Excluir visita',
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(
                                         Icons.copy,
                                         color: Color(0xFFFABA00),
                                       ),
@@ -250,10 +262,62 @@ class _ListaVisitasScreenState extends State<ListaVisitasScreen> {
             toma: elemento.toma,
             posicao: elemento.posicao,
             tipo: elemento.tipo,
-
             prensaId: novaPrensaId,
           );
-          await DatabaseHelper.instance.createElemento(novoElemento);
+          final novoElementoId = await DatabaseHelper.instance.createElemento(novoElemento);
+          
+          // Duplicar temperaturas do elemento
+          final temperaturasElemento = await DatabaseHelper.instance.getTemperaturasByElemento(elemento.id!);
+          for (var temperatura in temperaturasElemento) {
+            final novaTemperaturaElemento = TemperaturaElemento(
+              dataRegistro: temperatura.dataRegistro,
+              zona1: temperatura.zona1,
+              zona2: temperatura.zona2,
+              zona3: temperatura.zona3,
+              zona4: temperatura.zona4,
+              zona5: temperatura.zona5,
+              elementoId: novoElementoId,
+            );
+            await DatabaseHelper.instance.createTemperaturaElemento(novaTemperaturaElemento);
+          }
+          
+          // Duplicar comentários do elemento
+          final comentariosElemento = await DatabaseHelper.instance.getComentariosByElemento(elemento.id!);
+          for (var comentario in comentariosElemento) {
+            final novoComentario = ComentarioElemento(
+              comentario: comentario.comentario,
+              elementoId: novoElementoId,
+            );
+            final novoComentarioId = await DatabaseHelper.instance.createComentarioElemento(novoComentario);
+            
+            // Duplicar anexos do comentário
+            final anexosComentario = await DatabaseHelper.instance.getAnexosByComentario(comentario.id!);
+            for (var anexo in anexosComentario) {
+              final novoAnexo = AnexoComentario(
+                nome: anexo.nome,
+                tipo: anexo.tipo,
+                url: anexo.url,
+                base64: anexo.base64,
+                comentarioId: novoComentarioId,
+              );
+              await DatabaseHelper.instance.createAnexoComentario(novoAnexo);
+            }
+          }
+        }
+        
+        // Duplicar temperaturas da prensa
+        final temperaturasPrensa = await DatabaseHelper.instance.getTemperaturasByPrensa(prensa.id!);
+        for (var temperatura in temperaturasPrensa) {
+          final novaTemperaturaPrensa = TemperaturaPrensa(
+            dataRegistro: temperatura.dataRegistro,
+            zona1: temperatura.zona1,
+            zona2: temperatura.zona2,
+            zona3: temperatura.zona3,
+            zona4: temperatura.zona4,
+            zona5: temperatura.zona5,
+            prensaId: novaPrensaId,
+          );
+          await DatabaseHelper.instance.createTemperaturaPrensa(novaTemperaturaPrensa);
         }
       }
 
@@ -302,6 +366,73 @@ class _ListaVisitasScreenState extends State<ListaVisitasScreen> {
             backgroundColor: Colors.red,
           ),
         );
+      }
+    }
+  }
+
+  Future<void> _excluirVisita(Visita visita) async {
+    // Mostrar diálogo de confirmação
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Text(
+          'Excluir Visita',
+          style: TextStyle(color: Color(0xFFFABA00)),
+        ),
+        content: Text(
+          'Tem certeza que deseja excluir a visita de ${visita.cliente}?\n\nEsta ação não pode ser desfeita.',
+          style: const TextStyle(color: Colors.white),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text(
+              'Cancelar',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text(
+              'Excluir',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar == true) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        await DatabaseHelper.instance.deleteVisita(visita.id!);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Visita excluída com sucesso!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          _carregarVisitas();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Erro ao excluir visita: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } finally {
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }

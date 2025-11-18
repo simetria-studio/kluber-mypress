@@ -27,7 +27,7 @@ class DatabaseHelper {
 
     final db = await openDatabase(
       path,
-      version: 3,
+      version: 5,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
       onConfigure: _onConfigure,
@@ -139,6 +139,39 @@ class DatabaseHelper {
         print('Erro durante migração da tabela problemas: $e');
       }
     }
+    
+    if (oldVersion < 4) {
+      try {
+        // Adicionar colunas consumo_oleo e contaminacao na tabela elementos
+        var columns = await db.rawQuery('PRAGMA table_info(elementos)');
+        bool hasConsumoOleoColumn = columns.any((column) => column['name'] == 'consumo_oleo');
+        bool hasContaminacaoColumn = columns.any((column) => column['name'] == 'contaminacao');
+        
+        if (!hasConsumoOleoColumn) {
+          await db.execute('ALTER TABLE elementos ADD COLUMN consumo_oleo TEXT');
+        }
+        
+        if (!hasContaminacaoColumn) {
+          await db.execute('ALTER TABLE elementos ADD COLUMN contaminacao TEXT');
+        }
+      } catch (e) {
+        print('Erro durante migração da tabela elementos: $e');
+      }
+    }
+    
+    if (oldVersion < 5) {
+      try {
+        // Adicionar coluna comentario na tabela prensas
+        var columns = await db.rawQuery('PRAGMA table_info(prensas)');
+        bool hasComentarioColumn = columns.any((column) => column['name'] == 'comentario');
+        
+        if (!hasComentarioColumn) {
+          await db.execute('ALTER TABLE prensas ADD COLUMN comentario TEXT');
+        }
+      } catch (e) {
+        print('Erro durante migração da tabela prensas: $e');
+      }
+    }
   }
 
   Future _createDB(Database db, int version) async {
@@ -167,6 +200,7 @@ class DatabaseHelper {
         produto_corrente TEXT,
         produto_bendroads TEXT,
         torque REAL,
+        comentario TEXT,
         visita_id INTEGER,
         FOREIGN KEY (visita_id) REFERENCES visitas (id)
       )
@@ -182,6 +216,8 @@ class DatabaseHelper {
         posicao TEXT,
         tipo TEXT,
         prensa_id INTEGER,
+        consumo_oleo TEXT,
+        contaminacao TEXT,
         FOREIGN KEY (prensa_id) REFERENCES prensas (id)
       )
     ''');
@@ -314,6 +350,7 @@ class DatabaseHelper {
           produto_corrente TEXT,
           produto_bendroads TEXT,
           torque REAL,
+          comentario TEXT,
           visita_id INTEGER,
           FOREIGN KEY (visita_id) REFERENCES visitas (id)
         )
@@ -323,13 +360,19 @@ class DatabaseHelper {
         // Verifica se a coluna largura existe
         var columns = await db.rawQuery('PRAGMA table_info(prensas)');
         bool hasLarguraColumn = columns.any((column) => column['name'] == 'largura');
+        bool hasComentarioColumn = columns.any((column) => column['name'] == 'comentario');
         
         if (!hasLarguraColumn) {
           // Tenta adicionar a coluna largura
           await db.execute('ALTER TABLE prensas ADD COLUMN largura REAL');
         }
+        
+        if (!hasComentarioColumn) {
+          // Tenta adicionar a coluna comentario
+          await db.execute('ALTER TABLE prensas ADD COLUMN comentario TEXT');
+        }
       } catch (e) {
-        print('Erro ao verificar/adicionar coluna largura: $e');
+        print('Erro ao verificar/adicionar colunas na tabela prensas: $e');
       }
     }
 
@@ -344,9 +387,28 @@ class DatabaseHelper {
           posicao TEXT,
           tipo TEXT,
           prensa_id INTEGER,
+          consumo_oleo TEXT,
+          contaminacao TEXT,
           FOREIGN KEY (prensa_id) REFERENCES prensas (id)
         )
       ''');
+    } else {
+      try {
+        // Verifica se as colunas consumo_oleo e contaminacao existem
+        var columns = await db.rawQuery('PRAGMA table_info(elementos)');
+        bool hasConsumoOleoColumn = columns.any((column) => column['name'] == 'consumo_oleo');
+        bool hasContaminacaoColumn = columns.any((column) => column['name'] == 'contaminacao');
+        
+        if (!hasConsumoOleoColumn) {
+          await db.execute('ALTER TABLE elementos ADD COLUMN consumo_oleo TEXT');
+        }
+        
+        if (!hasContaminacaoColumn) {
+          await db.execute('ALTER TABLE elementos ADD COLUMN contaminacao TEXT');
+        }
+      } catch (e) {
+        print('Erro ao verificar/adicionar colunas consumo_oleo e contaminacao: $e');
+      }
     }
 
     if (!tableNames.contains('problemas')) {
@@ -481,20 +543,143 @@ class DatabaseHelper {
       throw Exception('Elementos padrão já existem para esta prensa');
     }
     
-    // Se for Dieffenbacher, criar apenas um elemento total
+    // Se for Dieffenbacher, criar todos os elementos padrão
     if (fabricante == 'Dieffenbacher') {
-      final elementoTotal = Elemento(
-        consumo1: 1.0,
-        consumo2: 1.0,
-        consumo3: 1.0,
-        toma: '2.0', // soma dos consumos 2 e 3
-        posicao: 'Superior', // posição única para Dieffenbacher
-        tipo: 'Cinta metálica',
-        prensaId: prensaId,
-      );
+      final elementosDieffenbacher = [
+        // 1. Cinta Superior
+        Elemento(
+          consumo1: 1.0,
+          consumo2: 1.0,
+          consumo3: 1.0,
+          toma: '2.0',
+          posicao: 'Superior',
+          tipo: 'Cinta metálica',
+          prensaId: prensaId,
+        ),
+        // 2. Cinta Inferior
+        Elemento(
+          consumo1: 1.0,
+          consumo2: 1.0,
+          consumo3: 1.0,
+          toma: '2.0',
+          posicao: 'Inferior',
+          tipo: 'Cinta metálica',
+          prensaId: prensaId,
+        ),
+        // 3. Corrente Superior
+        Elemento(
+          consumo1: 1.0,
+          consumo2: 1.0,
+          consumo3: 1.0,
+          toma: '2.0',
+          posicao: 'Superior',
+          tipo: 'Corrente',
+          prensaId: prensaId,
+        ),
+        // 4. Corrente Inferior
+        Elemento(
+          consumo1: 1.0,
+          consumo2: 1.0,
+          consumo3: 1.0,
+          toma: '2.0',
+          posicao: 'Inferior',
+          tipo: 'Corrente',
+          prensaId: prensaId,
+        ),
+        // 5. Bend rods
+        Elemento(
+          consumo1: 1.0,
+          consumo2: 1.0,
+          consumo3: 1.0,
+          toma: '2.0',
+          posicao: 'N/A',
+          tipo: 'Bend rods',
+          prensaId: prensaId,
+        ),
+      ];
       
-      // Inserir apenas o elemento total
-      await db.insert('elementos', elementoTotal.toMap());
+      // Inserir todos os elementos para Dieffenbacher
+      for (final elemento in elementosDieffenbacher) {
+        await db.insert('elementos', elemento.toMap());
+      }
+    } else if (fabricante == 'Siempelkamp') {
+      // Para Siempelkamp, criar apenas Cinta Superior, Cinta Inferior, Corrente Superior e Corrente Inferior
+      final elementosSiempelkamp = [
+        // 1. Cinta Superior
+        Elemento(
+          consumo1: 1.0,
+          consumo2: 1.0,
+          consumo3: 1.0,
+          toma: '2.0',
+          posicao: 'Superior',
+          tipo: 'Cinta metálica',
+          prensaId: prensaId,
+        ),
+        // 2. Cinta Inferior
+        Elemento(
+          consumo1: 1.0,
+          consumo2: 1.0,
+          consumo3: 1.0,
+          toma: '2.0',
+          posicao: 'Inferior',
+          tipo: 'Cinta metálica',
+          prensaId: prensaId,
+        ),
+        // 3. Corrente Superior
+        Elemento(
+          consumo1: 1.0,
+          consumo2: 1.0,
+          consumo3: 1.0,
+          toma: '2.0',
+          posicao: 'Superior',
+          tipo: 'Corrente',
+          prensaId: prensaId,
+        ),
+        // 4. Corrente Inferior
+        Elemento(
+          consumo1: 1.0,
+          consumo2: 1.0,
+          consumo3: 1.0,
+          toma: '2.0',
+          posicao: 'Inferior',
+          tipo: 'Corrente',
+          prensaId: prensaId,
+        ),
+      ];
+      
+      // Inserir os 4 elementos para Siempelkamp
+      for (final elemento in elementosSiempelkamp) {
+        await db.insert('elementos', elemento.toMap());
+      }
+    } else if (fabricante == 'Kusters') {
+      // Para Kusters, criar apenas Cinta Superior e Cinta Inferior
+      final elementosKusters = [
+        // 1. Cinta Superior
+        Elemento(
+          consumo1: 1.0,
+          consumo2: 1.0,
+          consumo3: 1.0,
+          toma: '2.0',
+          posicao: 'Superior',
+          tipo: 'Cinta metálica',
+          prensaId: prensaId,
+        ),
+        // 2. Cinta Inferior
+        Elemento(
+          consumo1: 1.0,
+          consumo2: 1.0,
+          consumo3: 1.0,
+          toma: '2.0',
+          posicao: 'Inferior',
+          tipo: 'Cinta metálica',
+          prensaId: prensaId,
+        ),
+      ];
+      
+      // Inserir apenas os dois elementos para Kusters
+      for (final elemento in elementosKusters) {
+        await db.insert('elementos', elemento.toMap());
+      }
     } else {
       // Para outros fabricantes, criar elementos na ordem específica
       final elementosPadrao = [
@@ -775,6 +960,83 @@ class DatabaseHelper {
     }
 
     return Visita.fromMap(maps.first);
+  }
+
+  Future<int> deleteVisita(int visitaId) async {
+    final db = await instance.database;
+    
+    // Primeiro, buscar todas as prensas relacionadas à visita
+    final prensas = await getPrensasByVisita(visitaId);
+    
+    // Para cada prensa, excluir elementos, temperaturas e problemas relacionados
+    for (var prensa in prensas) {
+      // Excluir temperaturas da prensa
+      await db.delete(
+        'temperaturas_prensa',
+        where: 'prensa_id = ?',
+        whereArgs: [prensa.id],
+      );
+      
+      // Excluir problemas da prensa
+      await db.delete(
+        'problemas',
+        where: 'prensa_id = ?',
+        whereArgs: [prensa.id],
+      );
+      
+      // Buscar elementos da prensa
+      final elementos = await getElementsByPrensa(prensa.id!);
+      
+      // Para cada elemento, excluir comentários e anexos
+      for (var elemento in elementos) {
+        // Buscar comentários do elemento
+        final comentarios = await getComentariosByElemento(elemento.id!);
+        
+        // Para cada comentário, excluir anexos
+        for (var comentario in comentarios) {
+          await db.delete(
+            'anexos_comentarios',
+            where: 'mypress_comentario_id = ?',
+            whereArgs: [comentario.id],
+          );
+        }
+        
+        // Excluir comentários do elemento
+        await db.delete(
+          'comentarios_elementos',
+          where: 'mypress_elemento_id = ?',
+          whereArgs: [elemento.id],
+        );
+        
+        // Excluir temperaturas do elemento
+        await db.delete(
+          'temperaturas_elementos',
+          where: 'elemento_id = ?',
+          whereArgs: [elemento.id],
+        );
+      }
+      
+      // Excluir elementos da prensa
+      await db.delete(
+        'elementos',
+        where: 'prensa_id = ?',
+        whereArgs: [prensa.id],
+      );
+    }
+    
+    // Excluir prensas da visita
+    await db.delete(
+      'prensas',
+      where: 'visita_id = ?',
+      whereArgs: [visitaId],
+    );
+    
+    // Finalmente, excluir a visita
+    return await db.delete(
+      'visitas',
+      where: 'id = ?',
+      whereArgs: [visitaId],
+    );
   }
 
   Future<int> createTemperaturaPrensa(TemperaturaPrensa temperatura) async {

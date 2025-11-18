@@ -12,6 +12,7 @@ class Prensa {
   final String produtoCorrente;
   final String produtoBendroads;
   final double? torque;
+  final String? comentario;
 
   Prensa({
     this.id,
@@ -27,6 +28,7 @@ class Prensa {
     required this.produtoCorrente,
     required this.produtoBendroads,
     this.torque,
+    this.comentario,
   });
 
   Map<String, dynamic> toMap() {
@@ -44,6 +46,7 @@ class Prensa {
       'produto_corrente': produtoCorrente,
       'produto_bendroads': produtoBendroads,
       'torque': torque ?? 0.0,
+      'comentario': comentario,
     };
   }
 
@@ -62,6 +65,7 @@ class Prensa {
       produtoCorrente: map['produto_corrente'],
       produtoBendroads: map['produto_bendroads'],
       torque: map['torque'] ?? 0.0,
+      comentario: map['comentario'],
     );
   }
 } 

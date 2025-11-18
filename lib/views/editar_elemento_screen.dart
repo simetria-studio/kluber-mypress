@@ -39,6 +39,11 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
   
   // Variável para armazenar o fabricante da prensa
   String? _fabricantePrensa;
+  
+  // Opções para Consumo de Óleo e Contaminação
+  final List<String> _opcoesAvaliacao = ['BOM', 'REGULAR', 'RUIM'];
+  String? _consumoOleoSelecionado;
+  String? _contaminacaoSelecionada;
 
   @override
   void initState() {
@@ -69,6 +74,8 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
     // Carregar valores para os dropdowns
     _tipoElementoSelecionado = widget.elemento.tipo;
     _posicaoSelecionada = widget.elemento.posicao != 'N/A' ? widget.elemento.posicao : null;
+    _consumoOleoSelecionado = widget.elemento.consumoOleo;
+    _contaminacaoSelecionada = widget.elemento.contaminacao;
   }
 
   Future<void> _carregarFabricantePrensa() async {
@@ -103,7 +110,9 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
             _consumo3Controller.text != widget.elemento.consumo3.toString() ||
             _tomaController.text != widget.elemento.toma ||
             _posicaoSelecionada != (widget.elemento.posicao != 'N/A' ? widget.elemento.posicao : null) ||
-            _tipoElementoSelecionado != widget.elemento.tipo;
+            _tipoElementoSelecionado != widget.elemento.tipo ||
+            _consumoOleoSelecionado != widget.elemento.consumoOleo ||
+            _contaminacaoSelecionada != widget.elemento.contaminacao;
 
     if (hasChanges != _hasChanges) {
       setState(() {
@@ -153,6 +162,8 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
           posicao: _posicaoSelecionada ?? 'N/A', // Usar 'N/A' como valor padrão para Bend rods
           tipo: _tipoElementoSelecionado!,
           prensaId: widget.elemento.prensaId,
+          consumoOleo: _consumoOleoSelecionado,
+          contaminacao: _contaminacaoSelecionada,
         );
 
         await DatabaseHelper.instance.updateElemento(elementoAtualizado);
@@ -216,64 +227,6 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
     return true;
   }
 
-  void _confirmarExclusao() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: const Text(
-          'Excluir Elemento',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: const Text(
-          'Tem certeza que deseja excluir este elemento? Esta ação não pode ser desfeita e todos os comentários associados também serão excluídos.',
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancelar',
-              style: TextStyle(color: Colors.grey[400]),
-            ),
-          ),
-          TextButton(
-            onPressed: () async {
-              try {
-                await DatabaseHelper.instance
-                    .deleteElemento(widget.elemento.id!);
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Elemento excluído com sucesso!'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                  Navigator.pop(context); // Fecha o diálogo
-                  Navigator.pop(context, true); // Volta para a tela anterior
-                }
-              } catch (e) {
-                if (mounted) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content:
-                          Text('Erro ao excluir elemento: ${e.toString()}'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              }
-            },
-            child: const Text(
-              'Excluir',
-              style: TextStyle(color: Colors.red),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -295,11 +248,6 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
                 onPressed: _isLoading ? null : _salvarElemento,
                 tooltip: 'Salvar alterações',
               ),
-            IconButton(
-              icon: const Icon(Icons.delete, color: Colors.red),
-              onPressed: _confirmarExclusao,
-              tooltip: 'Excluir elemento',
-            ),
           ],
         ),
         body: _isLoading
@@ -395,6 +343,68 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
                               return null;
                             },
                           ),
+                        ),
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<String>(
+                          value: _consumoOleoSelecionado,
+                          decoration: const InputDecoration(
+                            labelText: 'Consumo de Óleo',
+                            labelStyle: TextStyle(color: Colors.white),
+                            prefixIcon: Icon(Icons.opacity, color: Color(0xFFFABA00)),
+                            enabledBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Colors.grey),
+                            ),
+                            focusedBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Color(0xFFFABA00)),
+                            ),
+                            border: UnderlineInputBorder(),
+                          ),
+                          icon: const Icon(Icons.arrow_drop_down,
+                              color: Color(0xFFFABA00)),
+                          dropdownColor: Colors.grey[900],
+                          style: const TextStyle(color: Colors.white),
+                          items: _opcoesAvaliacao.map((String opcao) {
+                            return DropdownMenuItem<String>(
+                              value: opcao,
+                              child: Text(opcao),
+                            );
+                          }).toList(),
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              _consumoOleoSelecionado = newValue;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<String>(
+                          value: _contaminacaoSelecionada,
+                          decoration: const InputDecoration(
+                            labelText: 'Contaminação',
+                            labelStyle: TextStyle(color: Colors.white),
+                            prefixIcon: Icon(Icons.warning, color: Color(0xFFFABA00)),
+                            enabledBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Colors.grey),
+                            ),
+                            focusedBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Color(0xFFFABA00)),
+                            ),
+                            border: UnderlineInputBorder(),
+                          ),
+                          icon: const Icon(Icons.arrow_drop_down,
+                              color: Color(0xFFFABA00)),
+                          dropdownColor: Colors.grey[900],
+                          style: const TextStyle(color: Colors.white),
+                          items: _opcoesAvaliacao.map((String opcao) {
+                            return DropdownMenuItem<String>(
+                              value: opcao,
+                              child: Text(opcao),
+                            );
+                          }).toList(),
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              _contaminacaoSelecionada = newValue;
+                            });
+                          },
                         ),
                         const SizedBox(height: 16),
                         TextFormField(

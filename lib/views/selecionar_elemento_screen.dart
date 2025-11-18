@@ -4,7 +4,6 @@ import '../models/elemento_model.dart';
 import '../models/comentario_elemento_model.dart';
 import '../models/problema_model.dart';
 import '../database/database_helper.dart';
-import 'cadastro_elemento_screen.dart';
 import 'cadastro_comentario_elemento_screen.dart';
 import 'cadastro_anexo_screen.dart';
 import 'dart:convert';
@@ -396,7 +395,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                       'Aplicações da prensa',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 20,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -445,7 +444,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                                             elemento.tipo,
                                             style: const TextStyle(
                                               color: Color(0xFFFABA00),
-                                              fontSize: 18,
+                                              fontSize: 14,
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
@@ -459,14 +458,8 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                                           color: Color(0xFFFABA00)),
                                       color: Colors.grey[850],
                                       onSelected: (value) {
-                                        switch (value) {
-                                          case 'edit':
-                                            _editarElemento(elemento);
-                                            break;
-                                          case 'delete':
-                                            _confirmarExclusaoElemento(
-                                                elemento);
-                                            break;
+                                        if (value == 'edit') {
+                                          _editarElemento(elemento);
                                         }
                                       },
                                       itemBuilder: (context) => [
@@ -479,19 +472,6 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                                                   size: 20),
                                               const SizedBox(width: 8),
                                               Text('Editar',
-                                                  style: TextStyle(
-                                                      color: Colors.grey[200])),
-                                            ],
-                                          ),
-                                        ),
-                                        PopupMenuItem(
-                                          value: 'delete',
-                                          child: Row(
-                                            children: [
-                                              const Icon(Icons.delete,
-                                                  color: Colors.red, size: 20),
-                                              const SizedBox(width: 8),
-                                              Text('Excluir',
                                                   style: TextStyle(
                                                       color: Colors.grey[200])),
                                             ],
@@ -564,7 +544,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                                               'Comentar',
                                               style: TextStyle(
                                                 color: Color(0xFFFABA00),
-                                                fontSize: 12,
+                                                fontSize: 10,
                                                 fontWeight: FontWeight.w500,
                                               ),
                                             ),
@@ -604,7 +584,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                           'Demais Aplicações',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 20,
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -635,7 +615,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                                     'Lubrificante do Redutor Principal',
                                     style: TextStyle(
                                       color: Color(0xFFFABA00),
-                                      fontSize: 18,
+                                      fontSize: 14,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -719,7 +699,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                                     'Graxa da Zona Quente',
                                     style: TextStyle(
                                       color: Color(0xFFFABA00),
-                                      fontSize: 18,
+                                      fontSize: 14,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -803,7 +783,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                                     'Lubrificante do Tambor Principal',
                                     style: TextStyle(
                                       color: Color(0xFFFABA00),
-                                      fontSize: 18,
+                                      fontSize: 14,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -887,7 +867,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                                 : const Text(
                                     'Salvar Demais Aplicações',
                                     style: TextStyle(
-                                      fontSize: 16,
+                                      fontSize: 14,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -913,7 +893,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                       child: const Text(
                         'Finalizar',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 14,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -1016,134 +996,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
     );
   }
 
-  Widget _buildOptionCard(
-    BuildContext context, {
-    required String title,
-    required String description,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return Card(
-      color: Colors.grey[900],
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: const Color(0xFFFABA00).withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFABA00).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  icon,
-                  color: const Color(0xFFFABA00),
-                  size: 32,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      description,
-                      style: TextStyle(
-                        color: Colors.grey[400],
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(
-                Icons.arrow_forward_ios,
-                color: Color(0xFFFABA00),
-                size: 20,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
-  void _confirmarExclusaoElemento(Elemento elemento) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: const Text(
-          'Excluir Elemento',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: const Text(
-        'Tem certeza que deseja excluir este elemento? Esta ação não pode ser desfeita e todos os comentários associados também serão excluídos.',
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancelar',
-              style: TextStyle(color: Colors.grey[400]),
-            ),
-          ),
-          TextButton(
-            onPressed: () async {
-              try {
-                await DatabaseHelper.instance.deleteElemento(elemento.id!);
-                if (mounted) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Elemento excluído com sucesso!'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                  _carregarDados();
-                }
-              } catch (e) {
-                if (mounted) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content:
-                          Text('Erro ao excluir elemento: ${e.toString()}'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              }
-            },
-            child: const Text(
-              'Excluir',
-              style: TextStyle(color: Colors.red),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   void _editarElemento(Elemento elemento) {
     Navigator.push(

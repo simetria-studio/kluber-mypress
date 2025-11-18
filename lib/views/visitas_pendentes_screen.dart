@@ -108,7 +108,7 @@ class _VisitasPendentesScreenState extends State<VisitasPendentesScreen> {
       print('Enviando visita: $dadosVisita');
 
       // Enviar para a API e aguardar resposta
-      final response = await ApiService.enviarVisita(dadosVisita);
+      await ApiService.enviarVisita(dadosVisita);
 
       // Se chegou aqui, a API retornou sucesso
       await DatabaseHelper.instance.marcarVisitaComoEnviada(visita.id!);
@@ -197,7 +197,7 @@ class _VisitasPendentesScreenState extends State<VisitasPendentesScreen> {
         print('Enviando visita: $dadosVisita');
 
         // Enviar para a API e aguardar resposta
-        final response = await ApiService.enviarVisita(dadosVisita);
+        await ApiService.enviarVisita(dadosVisita);
 
         // Se chegou aqui, a API retornou sucesso
         await DatabaseHelper.instance.marcarVisitaComoEnviada(visita.id!);
@@ -225,6 +225,73 @@ class _VisitasPendentesScreenState extends State<VisitasPendentesScreen> {
       setState(() {
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _excluirVisita(Visita visita) async {
+    // Mostrar diálogo de confirmação
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Text(
+          'Excluir Visita',
+          style: TextStyle(color: Color(0xFFFABA00)),
+        ),
+        content: Text(
+          'Tem certeza que deseja excluir a visita de ${visita.cliente}?\n\nEsta ação não pode ser desfeita.',
+          style: const TextStyle(color: Colors.white),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text(
+              'Cancelar',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text(
+              'Excluir',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar == true) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        await DatabaseHelper.instance.deleteVisita(visita.id!);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Visita excluída com sucesso!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          _carregarVisitasPendentes();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Erro ao excluir visita: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } finally {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -304,12 +371,26 @@ class _VisitasPendentesScreenState extends State<VisitasPendentesScreen> {
                             ),
                           ],
                         ),
-                        trailing: IconButton(
-                          icon: const Icon(
-                            Icons.cloud_upload_outlined,
-                            color: Color(0xFFFABA00),
-                          ),
-                          onPressed: () => _enviarVisita(visita),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(
+                                Icons.delete_outline,
+                                color: Colors.red,
+                              ),
+                              onPressed: () => _excluirVisita(visita),
+                              tooltip: 'Excluir visita',
+                            ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.cloud_upload_outlined,
+                                color: Color(0xFFFABA00),
+                              ),
+                              onPressed: () => _enviarVisita(visita),
+                              tooltip: 'Enviar visita',
+                            ),
+                          ],
                         ),
                       ),
                     );
