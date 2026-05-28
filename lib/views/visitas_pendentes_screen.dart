@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/visita_model.dart';
 import '../models/problema_model.dart';
+import '../models/elemento_model.dart';
 import '../database/database_helper.dart';
 import '../services/api_service.dart';
 import '../widgets/custom_bottom_nav.dart';
@@ -50,60 +51,116 @@ class _VisitasPendentesScreenState extends State<VisitasPendentesScreen> {
     }
   }
 
+  String _normalizarTipoAplicacao(String tipo) {
+    switch (tipo) {
+      case 'Cinta metálica':
+        return 'cinta';
+      case 'Corrente':
+        return 'corrente';
+      case 'Bend rods':
+        return 'bend_rods';
+      default:
+        return tipo.toLowerCase().replaceAll(' ', '_');
+    }
+  }
+
+  Map<String, dynamic> _montarAplicacoesPrensa(List<Elemento> elementos) {
+    final Map<String, Map<String, dynamic>> aplicacoes = {};
+
+    for (final elemento in elementos) {
+      final tipo = _normalizarTipoAplicacao(elemento.tipo);
+      aplicacoes.putIfAbsent(tipo, () {
+        return {
+          'consumo_oleo': null,
+          'contaminacao': null,
+        };
+      });
+
+      if ((elemento.consumoOleo ?? '').isNotEmpty) {
+        aplicacoes[tipo]!['consumo_oleo'] = elemento.consumoOleo;
+      }
+      if ((elemento.contaminacao ?? '').isNotEmpty) {
+        aplicacoes[tipo]!['contaminacao'] = elemento.contaminacao;
+      }
+    }
+
+    return aplicacoes;
+  }
+
+  Future<Map<String, dynamic>> _montarDadosVisita(Visita visita) async {
+    final prensas = await DatabaseHelper.instance.getPrensasByVisita(visita.id!);
+
+    List<Problema> problemas = [];
+    for (var prensa in prensas) {
+      final problemasPrensa =
+          await DatabaseHelper.instance.getProblemasByPrensa(prensa.id!);
+      problemas.addAll(problemasPrensa);
+    }
+
+    final prensasFormatadas = await Future.wait(
+      prensas.map((prensa) async {
+        final temperaturas =
+            await DatabaseHelper.instance.getTemperaturasByPrensa(prensa.id!);
+        final elementos =
+            await DatabaseHelper.instance.getElementsByPrensa(prensa.id!);
+
+        final elementosFormatados = await Future.wait(
+          elementos.map((elemento) async {
+            final elementoMap = Map<String, dynamic>.from(elemento.toMap());
+            elementoMap.remove('consumo_oleo');
+            elementoMap.remove('contaminacao');
+
+            final comentarios =
+                await DatabaseHelper.instance.getComentariosByElemento(
+              elemento.id!,
+            );
+
+            final comentariosFormatados = await Future.wait(
+              comentarios.map((comentario) async {
+                final anexos = await DatabaseHelper.instance
+                    .getAnexosByComentario(comentario.id!);
+                return {
+                  'comentario': comentario.toMap(),
+                  'anexos': anexos.map((a) => a.toMap()).toList(),
+                };
+              }),
+            );
+
+            return {
+              'elemento': elementoMap,
+              'comentarios': comentariosFormatados,
+            };
+          }),
+        );
+
+        return {
+          'prensa': prensa.toMap(),
+          'temperaturas': temperaturas.map((t) => t.toMap()).toList(),
+          'aplicacoes_prensa': {
+            'prensa_id': prensa.id,
+            ..._montarAplicacoesPrensa(elementos),
+          },
+          'elementos': elementosFormatados,
+        };
+      }),
+    );
+
+    return {
+      'request': {
+        'visita': visita.toMap(),
+        'prensas': prensasFormatadas,
+        'problemas': problemas.map((p) => p.toMap()).toList(),
+      }
+    };
+  }
+
   Future<void> _enviarVisita(Visita visita) async {
     setState(() {
       _isLoading = true;
     });
 
     try {
-      // Buscar todos os dados relacionados à visita
-      final prensas =
-          await DatabaseHelper.instance.getPrensasByVisita(visita.id!);
-      
-      // Buscar problemas através das prensas
-      List<Problema> problemas = [];
-      for (var prensa in prensas) {
-        final problemasPrensa = await DatabaseHelper.instance.getProblemasByPrensa(prensa.id!);
-        problemas.addAll(problemasPrensa);
-      }
-
-      // Preparar dados para envio
-      final dadosVisita = {
-        'request': {
-          'visita': visita.toMap(),
-          'prensas': await Future.wait(
-            prensas.map((prensa) async {
-              return {
-                'prensa': prensa.toMap(),
-                'temperaturas': (await DatabaseHelper.instance.getTemperaturasByPrensa(prensa.id!)).map((t) => t.toMap()).toList(),
-                'elementos': await Future.wait(
-                  (await DatabaseHelper.instance.getElementsByPrensa(prensa.id!)).map((elemento) async {
-                    final comentarios = await DatabaseHelper.instance
-                        .getComentariosByElemento(elemento.id!);
-
-                    final comentariosFormatados = await Future.wait(
-                      comentarios.map((comentario) async {
-                        final anexos = await DatabaseHelper.instance
-                            .getAnexosByComentario(comentario.id!);
-                        return {
-                          'comentario': comentario.toMap(),
-                          'anexos': anexos.map((a) => a.toMap()).toList(),
-                        };
-                      }),
-                    );
-
-                    return {
-                      'elemento': elemento.toMap(),
-                      'comentarios': comentariosFormatados,
-                    };
-                  }),
-                ),
-              };
-            }),
-          ),
-          'problemas': problemas.map((p) => p.toMap()).toList(),
-        }
-      };
+      final dadosVisita = await _montarDadosVisita(visita);
 
       print('Enviando visita: $dadosVisita');
 
@@ -145,54 +202,7 @@ class _VisitasPendentesScreenState extends State<VisitasPendentesScreen> {
 
     try {
       for (final visita in _visitasPendentes) {
-        // Buscar todos os dados relacionados à visita
-        final prensas =
-            await DatabaseHelper.instance.getPrensasByVisita(visita.id!);
-        
-        // Buscar problemas através das prensas
-        List<Problema> problemas = [];
-        for (var prensa in prensas) {
-          final problemasPrensa = await DatabaseHelper.instance.getProblemasByPrensa(prensa.id!);
-          problemas.addAll(problemasPrensa);
-        }
-
-        // Preparar dados para envio
-        final dadosVisita = {
-          'request': {
-            'visita': visita.toMap(),
-            'prensas': await Future.wait(
-              prensas.map((prensa) async {
-                return {
-                  'prensa': prensa.toMap(),
-                  'temperaturas': (await DatabaseHelper.instance.getTemperaturasByPrensa(prensa.id!)).map((t) => t.toMap()).toList(),
-                  'elementos': await Future.wait(
-                    (await DatabaseHelper.instance.getElementsByPrensa(prensa.id!)).map((elemento) async {
-                      final comentarios = await DatabaseHelper.instance
-                          .getComentariosByElemento(elemento.id!);
-
-                      final comentariosFormatados = await Future.wait(
-                        comentarios.map((comentario) async {
-                          final anexos = await DatabaseHelper.instance
-                              .getAnexosByComentario(comentario.id!);
-                          return {
-                            'comentario': comentario.toMap(),
-                            'anexos': anexos.map((a) => a.toMap()).toList(),
-                          };
-                        }),
-                      );
-
-                      return {
-                        'elemento': elemento.toMap(),
-                        'comentarios': comentariosFormatados,
-                      };
-                    }),
-                  ),
-                };
-              }),
-            ),
-            'problemas': problemas.map((p) => p.toMap()).toList(),
-          }
-        };
+        final dadosVisita = await _montarDadosVisita(visita);
 
         print('Enviando visita: $dadosVisita');
 

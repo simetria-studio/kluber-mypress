@@ -27,7 +27,7 @@ class DatabaseHelper {
 
     final db = await openDatabase(
       path,
-      version: 5,
+      version: 6,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
       onConfigure: _onConfigure,
@@ -172,6 +172,21 @@ class DatabaseHelper {
         print('Erro durante migração da tabela prensas: $e');
       }
     }
+
+    if (oldVersion < 6) {
+      try {
+        // Adicionar coluna comentario na tabela visitas
+        var columns = await db.rawQuery('PRAGMA table_info(visitas)');
+        bool hasComentarioColumn =
+            columns.any((column) => column['name'] == 'comentario');
+
+        if (!hasComentarioColumn) {
+          await db.execute('ALTER TABLE visitas ADD COLUMN comentario TEXT');
+        }
+      } catch (e) {
+        print('Erro durante migração da tabela visitas: $e');
+      }
+    }
   }
 
   Future _createDB(Database db, int version) async {
@@ -182,6 +197,7 @@ class DatabaseHelper {
         cliente TEXT,
         contato_cliente TEXT,
         contato_kluber TEXT,
+        comentario TEXT,
         enviado INTEGER DEFAULT 0
       )
     ''');
@@ -292,6 +308,7 @@ class DatabaseHelper {
           cliente TEXT,
           contato_cliente TEXT,
           contato_kluber TEXT,
+          comentario TEXT,
           enviado INTEGER DEFAULT 0
         )
       ''');
@@ -300,12 +317,18 @@ class DatabaseHelper {
         // Verifica se a coluna enviado existe
         var columns = await db.rawQuery('PRAGMA table_info(visitas)');
         bool hasEnviadoColumn = columns.any((column) => column['name'] == 'enviado');
+        bool hasComentarioColumn =
+            columns.any((column) => column['name'] == 'comentario');
         
         if (!hasEnviadoColumn) {
           // Tenta adicionar a coluna
           await db.execute('ALTER TABLE visitas ADD COLUMN enviado INTEGER DEFAULT 0');
           // Atualiza registros existentes
           await db.execute('UPDATE visitas SET enviado = 0 WHERE enviado IS NULL');
+        }
+
+        if (!hasComentarioColumn) {
+          await db.execute('ALTER TABLE visitas ADD COLUMN comentario TEXT');
         }
       } catch (e) {
         print('Erro ao verificar/adicionar coluna enviado: $e');
@@ -317,6 +340,7 @@ class DatabaseHelper {
             cliente TEXT,
             contato_cliente TEXT,
             contato_kluber TEXT,
+            comentario TEXT,
             enviado INTEGER DEFAULT 0
           )
         ''');
@@ -960,6 +984,33 @@ class DatabaseHelper {
     }
 
     return Visita.fromMap(maps.first);
+  }
+
+  Future<int?> getVisitaIdByPrensa(int prensaId) async {
+    final db = await instance.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'prensas',
+      columns: ['visita_id'],
+      where: 'id = ?',
+      whereArgs: [prensaId],
+      limit: 1,
+    );
+
+    if (maps.isEmpty) {
+      return null;
+    }
+
+    return maps.first['visita_id'] as int?;
+  }
+
+  Future<void> updateComentarioVisita(int visitaId, String comentario) async {
+    final db = await instance.database;
+    await db.update(
+      'visitas',
+      {'comentario': comentario},
+      where: 'id = ?',
+      whereArgs: [visitaId],
+    );
   }
 
   Future<int> deleteVisita(int visitaId) async {

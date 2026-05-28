@@ -10,6 +10,7 @@ import 'dart:convert';
 import '../models/anexo_comentario_model.dart';
 import 'editar_elemento_screen.dart';
 import '../widgets/custom_bottom_nav.dart';
+import 'cadastro_comentario_visita_screen.dart';
 
 class SelecionarElementoScreen extends StatefulWidget {
   final int prensaId;
@@ -27,6 +28,8 @@ class SelecionarElementoScreen extends StatefulWidget {
 class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
   List<Elemento> _elementos = [];
   Map<int, List<ComentarioElemento>> _comentariosPorElemento = {};
+  Map<String, String?> _consumoOleoPorTipo = {};
+  Map<String, String?> _contaminacaoPorTipo = {};
   bool _isLoading = true;
   int _currentIndex = 0;
 
@@ -63,6 +66,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
     'Outros'
   ];
   String? _graxaTamborSelecionada;
+  final List<String> _opcoesAvaliacaoElemento = ['OK', 'ATENÇÃO', 'ALERTA'];
 
   @override
   void initState() {
@@ -123,6 +127,20 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
       setState(() {
         _elementos = elementos;
         _comentariosPorElemento = comentariosPorElemento;
+        _consumoOleoPorTipo = {
+          for (final tipo in _getTiposMonitorados())
+            tipo: _getValorInicialPorTipo(
+              tipo,
+              (elemento) => elemento.consumoOleo,
+            ),
+        };
+        _contaminacaoPorTipo = {
+          for (final tipo in _getTiposMonitorados())
+            tipo: _getValorInicialPorTipo(
+              tipo,
+              (elemento) => elemento.contaminacao,
+            ),
+        };
         _isLoading = false;
       });
     } catch (e) {
@@ -574,6 +592,28 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                     const SizedBox(height: 24),
                   ],
 
+                  if (_elementos.where(_isElementoMonitorado).isNotEmpty) ...[
+                    const Text(
+                      'Aplicações da prensa',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Consumo de óleo e contaminação por aplicação',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ..._getTiposMonitorados().map(_buildAvaliacaoTipoCard),
+                    const SizedBox(height: 24),
+                  ],
+
                   // Formulário de Demais Aplicações
                   Form(
                     key: _formKey,
@@ -996,6 +1036,139 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
     );
   }
 
+  bool _isElementoMonitorado(Elemento elemento) {
+    return elemento.tipo == 'Cinta metálica' ||
+        elemento.tipo == 'Corrente' ||
+        elemento.tipo == 'Bend rods';
+  }
+
+  List<String> _getTiposMonitorados() {
+    final tipos = <String>{};
+    for (final elemento in _elementos.where(_isElementoMonitorado)) {
+      tipos.add(elemento.tipo);
+    }
+    return tipos.toList();
+  }
+
+  String? _getValorInicialPorTipo(
+    String tipo,
+    String? Function(Elemento elemento) getter,
+  ) {
+    for (final elemento in _elementos.where((e) => e.tipo == tipo)) {
+      final valor = getter(elemento);
+      if (valor != null && valor.isNotEmpty) {
+        return valor;
+      }
+    }
+    return null;
+  }
+
+  Widget _buildAvaliacaoTipoCard(String tipo) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[900],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(0xFFFABA00).withOpacity(0.3),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            tipo,
+            style: const TextStyle(
+              color: Color(0xFFFABA00),
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            value: _consumoOleoPorTipo[tipo],
+            decoration: const InputDecoration(
+              labelText: 'Consumo de óleo',
+              labelStyle: TextStyle(color: Color(0xFFFABA00)),
+              border: OutlineInputBorder(),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Color(0xFFFABA00)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Color(0xFFFABA00), width: 2),
+              ),
+            ),
+            dropdownColor: Colors.grey[900],
+            style: const TextStyle(color: Colors.white),
+            items: _opcoesAvaliacaoElemento.map((String value) {
+              return DropdownMenuItem<String>(
+                value: value,
+                child: Text(value),
+              );
+            }).toList(),
+            onChanged: (String? newValue) {
+              setState(() {
+                _consumoOleoPorTipo[tipo] = newValue;
+              });
+            },
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            value: _contaminacaoPorTipo[tipo],
+            decoration: const InputDecoration(
+              labelText: 'Contaminação',
+              labelStyle: TextStyle(color: Color(0xFFFABA00)),
+              border: OutlineInputBorder(),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Color(0xFFFABA00)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Color(0xFFFABA00), width: 2),
+              ),
+            ),
+            dropdownColor: Colors.grey[900],
+            style: const TextStyle(color: Colors.white),
+            items: _opcoesAvaliacaoElemento.map((String value) {
+              return DropdownMenuItem<String>(
+                value: value,
+                child: Text(value),
+              );
+            }).toList(),
+            onChanged: (String? newValue) {
+              setState(() {
+                _contaminacaoPorTipo[tipo] = newValue;
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _salvarAvaliacoesElementos() async {
+    final elementosMonitorados = _elementos.where(_isElementoMonitorado);
+
+    for (final elemento in elementosMonitorados) {
+      if (elemento.id == null) continue;
+
+      final elementoAtualizado = Elemento(
+        id: elemento.id,
+        consumo1: elemento.consumo1,
+        consumo2: elemento.consumo2,
+        consumo3: elemento.consumo3,
+        toma: elemento.toma,
+        posicao: elemento.posicao,
+        tipo: elemento.tipo,
+        prensaId: elemento.prensaId,
+        consumoOleo: _consumoOleoPorTipo[elemento.tipo],
+        contaminacao: _contaminacaoPorTipo[elemento.tipo],
+      );
+
+      await DatabaseHelper.instance.updateElemento(elementoAtualizado);
+    }
+  }
+
 
 
   void _editarElemento(Elemento elemento) {
@@ -1050,6 +1223,8 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
       });
 
       try {
+        await _salvarAvaliacoesElementos();
+
         final problemas = await DatabaseHelper.instance.getProblemasByPrensa(widget.prensaId);
         final problemaExistente = problemas.isNotEmpty ? problemas.first : null;
 
@@ -1102,16 +1277,44 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
   }
 
   Future<void> _finalizarCadastro() async {
-    // Mostrar mensagem de sucesso
-    if (mounted) {
+    try {
+      await _salvarAvaliacoesElementos();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Erro ao salvar aplicações da prensa: ${e.toString()}',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    final visitaId =
+        await DatabaseHelper.instance.getVisitaIdByPrensa(widget.prensaId);
+
+    if (!mounted) return;
+
+    if (visitaId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Cadastro finalizado com sucesso!'),
-          backgroundColor: Colors.green,
+          content: Text('Não foi possível localizar a visita desta prensa.'),
+          backgroundColor: Colors.red,
         ),
       );
-      // Navegar para a tela inicial
-      Navigator.of(context).popUntil((route) => route.isFirst);
+      return;
     }
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CadastroComentarioVisitaScreen(
+          visitaId: visitaId,
+        ),
+      ),
+    );
   }
 }

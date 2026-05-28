@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 import 'dart:async';
 import '../models/visita_model.dart';
 import '../database/database_helper.dart';
-import 'selecionar_cadastro_screen.dart';
 import '../models/cliente_model.dart';
 import '../services/cliente_service.dart';
 import '../models/usuario_kluber_model.dart';

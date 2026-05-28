@@ -227,6 +227,7 @@ class _ListaVisitasScreenState extends State<ListaVisitasScreen> {
         cliente: visita.cliente,
         contatoCliente: visita.contatoCliente,
         contatoKluber: visita.contatoKluber,
+        comentario: visita.comentario,
       );
 
       final novaVisitaId =

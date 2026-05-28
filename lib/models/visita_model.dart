@@ -4,6 +4,7 @@ class Visita {
   final String cliente;
   final String contatoCliente;
   final String contatoKluber;
+  final String comentario;
 
   Visita({
     this.id,
@@ -11,6 +12,7 @@ class Visita {
     required this.cliente,
     required this.contatoCliente,
     required this.contatoKluber,
+    this.comentario = '',
   });
 
   Map<String, dynamic> toMap() {
@@ -20,6 +22,7 @@ class Visita {
       'cliente': cliente,
       'contato_cliente': contatoCliente,
       'contato_kluber': contatoKluber,
+      'comentario': comentario,
     };
   }
 
@@ -30,6 +33,7 @@ class Visita {
       cliente: map['cliente'],
       contatoCliente: map['contato_cliente'],
       contatoKluber: map['contato_kluber'],
+      comentario: map['comentario'] ?? '',
     );
   }
 } 
