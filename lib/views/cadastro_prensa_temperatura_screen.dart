@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/prensa_model.dart';
 import '../models/temperatura_prensa_model.dart';
 import '../database/database_helper.dart';
+import '../helpers/espessura_constants.dart';
 import 'selecionar_elemento_screen.dart';
 
 class CadastroPrensaTemperaturaScreen extends StatefulWidget {
@@ -26,7 +27,6 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
   // Controllers para Prensa
   final _fabricanteController = TextEditingController();
   final _comprimentoController = TextEditingController();
-  final _espressuraController = TextEditingController();
   final _larguraController = TextEditingController();
   final _produtoController = TextEditingController();
   final _velocidadeController = TextEditingController();
@@ -84,6 +84,8 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
   ];
   String? _produtoBendroadsSelecionado;
 
+  String? _espessuraSelecionada;
+
   bool _isLoading = false;
   bool _showTemperaturaSection = true;
 
@@ -97,7 +99,8 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
     if (widget.prensa != null) {
       _fabricanteSelecionado = widget.prensa!.fabricante;
       _comprimentoController.text = widget.prensa!.comprimento?.toString() ?? '';
-      _espressuraController.text = widget.prensa!.espressura.toString();
+      _espessuraSelecionada =
+          EspessuraConstants.opcaoDeValor(widget.prensa!.espressura);
       _larguraController.text = widget.prensa!.largura?.toString() ?? '';
       _produtoSelecionado = widget.prensa!.produto;
       _velocidadeController.text = widget.prensa!.velocidade.toString();
@@ -132,7 +135,7 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
           comprimento: _comprimentoController.text.isNotEmpty 
               ? double.parse(_comprimentoController.text) 
               : null,
-          espressura: double.parse(_espressuraController.text),
+          espressura: double.parse(_espessuraSelecionada!),
           largura: _larguraController.text.isNotEmpty 
               ? double.parse(_larguraController.text) 
               : null,
@@ -326,18 +329,29 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
                       const SizedBox(height: 16),
 
                       // Espessura
-                      TextFormField(
-                        controller: _espressuraController,
+                      DropdownButtonFormField<String>(
+                        value: _espessuraSelecionada,
                         decoration: const InputDecoration(
                           labelText: 'Espessura - mm',
                           labelStyle: TextStyle(color: Colors.white),
                           prefixIcon: Icon(Icons.height, color: Color(0xFFFABA00)),
                         ),
+                        dropdownColor: Colors.grey[900],
                         style: const TextStyle(color: Colors.white),
-                        keyboardType: TextInputType.number,
+                        items: EspessuraConstants.opcoes.map((String espessura) {
+                          return DropdownMenuItem<String>(
+                            value: espessura,
+                            child: Text('$espessura mm'),
+                          );
+                        }).toList(),
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            _espessuraSelecionada = newValue;
+                          });
+                        },
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Por favor, insira a espessura';
+                            return 'Por favor, selecione a espessura';
                           }
                           return null;
                         },
@@ -640,7 +654,6 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
   void dispose() {
     _fabricanteController.dispose();
     _comprimentoController.dispose();
-    _espressuraController.dispose();
     _larguraController.dispose();
     _produtoController.dispose();
     _velocidadeController.dispose();

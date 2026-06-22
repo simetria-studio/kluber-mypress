@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/prensa_model.dart';
 import '../models/temperatura_prensa_model.dart';
 import '../database/database_helper.dart';
+import '../helpers/espessura_constants.dart';
 import 'selecionar_elemento_screen.dart';
 
 class CadastroPrensaScreen extends StatefulWidget {
@@ -22,7 +23,6 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
   final _formKey = GlobalKey<FormState>();
   final _fabricanteController = TextEditingController();
   final _comprimentoController = TextEditingController();
-  final _espressuraController = TextEditingController();
   final _larguraController = TextEditingController();
   final _produtoController = TextEditingController();
   final _velocidadeController = TextEditingController();
@@ -79,13 +79,16 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
   ];
   String? _produtoBendroadsSelecionado;
 
+  String? _espessuraSelecionada;
+
   @override
   void initState() {
     super.initState();
     if (widget.prensa != null) {
       _fabricanteSelecionado = widget.prensa!.fabricante;
       _comprimentoController.text = widget.prensa!.comprimento?.toString() ?? '';
-      _espressuraController.text = widget.prensa!.espressura.toString();
+      _espessuraSelecionada =
+          EspessuraConstants.opcaoDeValor(widget.prensa!.espressura);
       _larguraController.text = widget.prensa!.largura?.toString() ?? '';
       _produtoSelecionado = widget.prensa!.produto;
       _velocidadeController.text = widget.prensa!.velocidade.toString();
@@ -130,7 +133,7 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
           comprimento: _comprimentoController.text.isNotEmpty 
               ? double.parse(_comprimentoController.text) 
               : null,
-          espressura: double.parse(_espressuraController.text),
+          espressura: double.parse(_espessuraSelecionada!),
           largura: _larguraController.text.isNotEmpty 
               ? double.parse(_larguraController.text) 
               : null,
@@ -334,14 +337,12 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
-                TextFormField(
-                  controller: _espressuraController,
-                  style: const TextStyle(color: Colors.white),
+                DropdownButtonFormField<String>(
+                  value: _espessuraSelecionada,
                   decoration: const InputDecoration(
                     labelText: 'Espessura - mm',
                     labelStyle: TextStyle(color: Colors.white),
                     prefixIcon: Icon(Icons.height, color: Color(0xFFFABA00)),
-                    suffixText: 'mm',
                     enabledBorder: UnderlineInputBorder(
                       borderSide: BorderSide(color: Colors.grey),
                     ),
@@ -350,9 +351,27 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
                     ),
                     border: UnderlineInputBorder(),
                   ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) =>
-                      value?.isEmpty ?? true ? 'Campo obrigatório' : null,
+                  icon: const Icon(Icons.arrow_drop_down,
+                      color: Color(0xFFFABA00)),
+                  dropdownColor: Colors.grey[900],
+                  style: const TextStyle(color: Colors.white),
+                  items: EspessuraConstants.opcoes.map((String espessura) {
+                    return DropdownMenuItem<String>(
+                      value: espessura,
+                      child: Text('$espessura mm'),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      _espessuraSelecionada = newValue;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor, selecione a espessura';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -711,7 +730,6 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
   void dispose() {
     _fabricanteController.dispose();
     _comprimentoController.dispose();
-    _espressuraController.dispose();
     _larguraController.dispose();
     _produtoController.dispose();
     _velocidadeController.dispose();

@@ -39,11 +39,6 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
   
   // Variável para armazenar o fabricante da prensa
   String? _fabricantePrensa;
-  
-  // Opções para Consumo de Óleo e Contaminação
-  final List<String> _opcoesAvaliacao = ['BOM', 'REGULAR', 'RUIM'];
-  String? _consumoOleoSelecionado;
-  String? _contaminacaoSelecionada;
 
   @override
   void initState() {
@@ -74,8 +69,6 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
     // Carregar valores para os dropdowns
     _tipoElementoSelecionado = widget.elemento.tipo;
     _posicaoSelecionada = widget.elemento.posicao != 'N/A' ? widget.elemento.posicao : null;
-    _consumoOleoSelecionado = widget.elemento.consumoOleo;
-    _contaminacaoSelecionada = widget.elemento.contaminacao;
   }
 
   Future<void> _carregarFabricantePrensa() async {
@@ -110,9 +103,7 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
             _consumo3Controller.text != widget.elemento.consumo3.toString() ||
             _tomaController.text != widget.elemento.toma ||
             _posicaoSelecionada != (widget.elemento.posicao != 'N/A' ? widget.elemento.posicao : null) ||
-            _tipoElementoSelecionado != widget.elemento.tipo ||
-            _consumoOleoSelecionado != widget.elemento.consumoOleo ||
-            _contaminacaoSelecionada != widget.elemento.contaminacao;
+            _tipoElementoSelecionado != widget.elemento.tipo;
 
     if (hasChanges != _hasChanges) {
       setState(() {
@@ -162,8 +153,8 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
           posicao: _posicaoSelecionada ?? 'N/A', // Usar 'N/A' como valor padrão para Bend rods
           tipo: _tipoElementoSelecionado!,
           prensaId: widget.elemento.prensaId,
-          consumoOleo: _consumoOleoSelecionado,
-          contaminacao: _contaminacaoSelecionada,
+          consumoOleo: widget.elemento.consumoOleo,
+          contaminacao: widget.elemento.contaminacao,
         );
 
         await DatabaseHelper.instance.updateElemento(elementoAtualizado);
@@ -343,68 +334,6 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
                               return null;
                             },
                           ),
-                        ),
-                        const SizedBox(height: 16),
-                        DropdownButtonFormField<String>(
-                          value: _consumoOleoSelecionado,
-                          decoration: const InputDecoration(
-                            labelText: 'Consumo de Óleo',
-                            labelStyle: TextStyle(color: Colors.white),
-                            prefixIcon: Icon(Icons.opacity, color: Color(0xFFFABA00)),
-                            enabledBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Colors.grey),
-                            ),
-                            focusedBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Color(0xFFFABA00)),
-                            ),
-                            border: UnderlineInputBorder(),
-                          ),
-                          icon: const Icon(Icons.arrow_drop_down,
-                              color: Color(0xFFFABA00)),
-                          dropdownColor: Colors.grey[900],
-                          style: const TextStyle(color: Colors.white),
-                          items: _opcoesAvaliacao.map((String opcao) {
-                            return DropdownMenuItem<String>(
-                              value: opcao,
-                              child: Text(opcao),
-                            );
-                          }).toList(),
-                          onChanged: (String? newValue) {
-                            setState(() {
-                              _consumoOleoSelecionado = newValue;
-                            });
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        DropdownButtonFormField<String>(
-                          value: _contaminacaoSelecionada,
-                          decoration: const InputDecoration(
-                            labelText: 'Contaminação',
-                            labelStyle: TextStyle(color: Colors.white),
-                            prefixIcon: Icon(Icons.warning, color: Color(0xFFFABA00)),
-                            enabledBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Colors.grey),
-                            ),
-                            focusedBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Color(0xFFFABA00)),
-                            ),
-                            border: UnderlineInputBorder(),
-                          ),
-                          icon: const Icon(Icons.arrow_drop_down,
-                              color: Color(0xFFFABA00)),
-                          dropdownColor: Colors.grey[900],
-                          style: const TextStyle(color: Colors.white),
-                          items: _opcoesAvaliacao.map((String opcao) {
-                            return DropdownMenuItem<String>(
-                              value: opcao,
-                              child: Text(opcao),
-                            );
-                          }).toList(),
-                          onChanged: (String? newValue) {
-                            setState(() {
-                              _contaminacaoSelecionada = newValue;
-                            });
-                          },
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
