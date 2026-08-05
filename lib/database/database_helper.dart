@@ -48,13 +48,16 @@ class DatabaseHelper {
       try {
         // Verifica se a coluna já existe
         var columns = await db.rawQuery('PRAGMA table_info(visitas)');
-        bool hasEnviadoColumn = columns.any((column) => column['name'] == 'enviado');
-        
+        bool hasEnviadoColumn =
+            columns.any((column) => column['name'] == 'enviado');
+
         if (!hasEnviadoColumn) {
           // Adiciona a coluna enviado na tabela visitas
-          await db.execute('ALTER TABLE visitas ADD COLUMN enviado INTEGER DEFAULT 0');
+          await db.execute(
+              'ALTER TABLE visitas ADD COLUMN enviado INTEGER DEFAULT 0');
           // Atualiza registros existentes
-          await db.execute('UPDATE visitas SET enviado = 0 WHERE enviado IS NULL');
+          await db
+              .execute('UPDATE visitas SET enviado = 0 WHERE enviado IS NULL');
         }
       } catch (e) {
         print('Erro durante upgrade do banco: $e');
@@ -69,32 +72,35 @@ class DatabaseHelper {
             enviado INTEGER DEFAULT 0
           )
         ''');
-        
+
         // Copia dados existentes
         await db.execute('''
           INSERT INTO visitas_temp(id, data_visita, cliente, contato_cliente, contato_kluber)
           SELECT id, data_visita, cliente, contato_cliente, contato_kluber FROM visitas
         ''');
-        
+
         // Remove tabela antiga
         await db.execute('DROP TABLE visitas');
-        
+
         // Renomeia a nova tabela
         await db.execute('ALTER TABLE visitas_temp RENAME TO visitas');
       }
     }
-    
+
     if (oldVersion < 3) {
       try {
         // Migração da tabela problemas: mudança de visita_id para prensa_id
         var columns = await db.rawQuery('PRAGMA table_info(problemas)');
-        bool hasPrensaIdColumn = columns.any((column) => column['name'] == 'prensa_id');
-        bool hasVisitaIdColumn = columns.any((column) => column['name'] == 'visita_id');
-        
+        bool hasPrensaIdColumn =
+            columns.any((column) => column['name'] == 'prensa_id');
+        bool hasVisitaIdColumn =
+            columns.any((column) => column['name'] == 'visita_id');
+
         if (!hasPrensaIdColumn && hasVisitaIdColumn) {
           // Adiciona a nova coluna prensa_id
-          await db.execute('ALTER TABLE problemas ADD COLUMN prensa_id INTEGER');
-          
+          await db
+              .execute('ALTER TABLE problemas ADD COLUMN prensa_id INTEGER');
+
           // Remove a coluna antiga visita_id
           await db.execute('''
             CREATE TABLE IF NOT EXISTS problemas_temp(
@@ -112,7 +118,7 @@ class DatabaseHelper {
               FOREIGN KEY (prensa_id) REFERENCES prensas (id)
             )
           ''');
-          
+
           // Copia dados existentes (sem a coluna visita_id)
           await db.execute('''
             INSERT INTO problemas_temp(
@@ -128,10 +134,10 @@ class DatabaseHelper {
               graxa_rolamentos_zonas_quentes, graxa_tambor_principal, prensa_id
             FROM problemas
           ''');
-          
+
           // Remove tabela antiga
           await db.execute('DROP TABLE problemas');
-          
+
           // Renomeia a nova tabela
           await db.execute('ALTER TABLE problemas_temp RENAME TO problemas');
         }
@@ -139,32 +145,37 @@ class DatabaseHelper {
         print('Erro durante migração da tabela problemas: $e');
       }
     }
-    
+
     if (oldVersion < 4) {
       try {
         // Adicionar colunas consumo_oleo e contaminacao na tabela elementos
         var columns = await db.rawQuery('PRAGMA table_info(elementos)');
-        bool hasConsumoOleoColumn = columns.any((column) => column['name'] == 'consumo_oleo');
-        bool hasContaminacaoColumn = columns.any((column) => column['name'] == 'contaminacao');
-        
+        bool hasConsumoOleoColumn =
+            columns.any((column) => column['name'] == 'consumo_oleo');
+        bool hasContaminacaoColumn =
+            columns.any((column) => column['name'] == 'contaminacao');
+
         if (!hasConsumoOleoColumn) {
-          await db.execute('ALTER TABLE elementos ADD COLUMN consumo_oleo TEXT');
+          await db
+              .execute('ALTER TABLE elementos ADD COLUMN consumo_oleo TEXT');
         }
-        
+
         if (!hasContaminacaoColumn) {
-          await db.execute('ALTER TABLE elementos ADD COLUMN contaminacao TEXT');
+          await db
+              .execute('ALTER TABLE elementos ADD COLUMN contaminacao TEXT');
         }
       } catch (e) {
         print('Erro durante migração da tabela elementos: $e');
       }
     }
-    
+
     if (oldVersion < 5) {
       try {
         // Adicionar coluna comentario na tabela prensas
         var columns = await db.rawQuery('PRAGMA table_info(prensas)');
-        bool hasComentarioColumn = columns.any((column) => column['name'] == 'comentario');
-        
+        bool hasComentarioColumn =
+            columns.any((column) => column['name'] == 'comentario');
+
         if (!hasComentarioColumn) {
           await db.execute('ALTER TABLE prensas ADD COLUMN comentario TEXT');
         }
@@ -316,15 +327,18 @@ class DatabaseHelper {
       try {
         // Verifica se a coluna enviado existe
         var columns = await db.rawQuery('PRAGMA table_info(visitas)');
-        bool hasEnviadoColumn = columns.any((column) => column['name'] == 'enviado');
+        bool hasEnviadoColumn =
+            columns.any((column) => column['name'] == 'enviado');
         bool hasComentarioColumn =
             columns.any((column) => column['name'] == 'comentario');
-        
+
         if (!hasEnviadoColumn) {
           // Tenta adicionar a coluna
-          await db.execute('ALTER TABLE visitas ADD COLUMN enviado INTEGER DEFAULT 0');
+          await db.execute(
+              'ALTER TABLE visitas ADD COLUMN enviado INTEGER DEFAULT 0');
           // Atualiza registros existentes
-          await db.execute('UPDATE visitas SET enviado = 0 WHERE enviado IS NULL');
+          await db
+              .execute('UPDATE visitas SET enviado = 0 WHERE enviado IS NULL');
         }
 
         if (!hasComentarioColumn) {
@@ -344,16 +358,16 @@ class DatabaseHelper {
             enviado INTEGER DEFAULT 0
           )
         ''');
-        
+
         // Copia dados existentes
         await db.execute('''
           INSERT INTO visitas_temp(id, data_visita, cliente, contato_cliente, contato_kluber)
           SELECT id, data_visita, cliente, contato_cliente, contato_kluber FROM visitas
         ''');
-        
+
         // Remove tabela antiga
         await db.execute('DROP TABLE visitas');
-        
+
         // Renomeia a nova tabela
         await db.execute('ALTER TABLE visitas_temp RENAME TO visitas');
       }
@@ -383,14 +397,16 @@ class DatabaseHelper {
       try {
         // Verifica se a coluna largura existe
         var columns = await db.rawQuery('PRAGMA table_info(prensas)');
-        bool hasLarguraColumn = columns.any((column) => column['name'] == 'largura');
-        bool hasComentarioColumn = columns.any((column) => column['name'] == 'comentario');
-        
+        bool hasLarguraColumn =
+            columns.any((column) => column['name'] == 'largura');
+        bool hasComentarioColumn =
+            columns.any((column) => column['name'] == 'comentario');
+
         if (!hasLarguraColumn) {
           // Tenta adicionar a coluna largura
           await db.execute('ALTER TABLE prensas ADD COLUMN largura REAL');
         }
-        
+
         if (!hasComentarioColumn) {
           // Tenta adicionar a coluna comentario
           await db.execute('ALTER TABLE prensas ADD COLUMN comentario TEXT');
@@ -420,18 +436,23 @@ class DatabaseHelper {
       try {
         // Verifica se as colunas consumo_oleo e contaminacao existem
         var columns = await db.rawQuery('PRAGMA table_info(elementos)');
-        bool hasConsumoOleoColumn = columns.any((column) => column['name'] == 'consumo_oleo');
-        bool hasContaminacaoColumn = columns.any((column) => column['name'] == 'contaminacao');
-        
+        bool hasConsumoOleoColumn =
+            columns.any((column) => column['name'] == 'consumo_oleo');
+        bool hasContaminacaoColumn =
+            columns.any((column) => column['name'] == 'contaminacao');
+
         if (!hasConsumoOleoColumn) {
-          await db.execute('ALTER TABLE elementos ADD COLUMN consumo_oleo TEXT');
+          await db
+              .execute('ALTER TABLE elementos ADD COLUMN consumo_oleo TEXT');
         }
-        
+
         if (!hasContaminacaoColumn) {
-          await db.execute('ALTER TABLE elementos ADD COLUMN contaminacao TEXT');
+          await db
+              .execute('ALTER TABLE elementos ADD COLUMN contaminacao TEXT');
         }
       } catch (e) {
-        print('Erro ao verificar/adicionar colunas consumo_oleo e contaminacao: $e');
+        print(
+            'Erro ao verificar/adicionar colunas consumo_oleo e contaminacao: $e');
       }
     }
 
@@ -540,33 +561,33 @@ class DatabaseHelper {
 
   Future<void> criarElementosPadrao(int prensaId) async {
     final db = await instance.database;
-    
+
     // Primeiro, buscar a prensa para verificar o fabricante
     final prensasResult = await db.query(
       'prensas',
       where: 'id = ?',
       whereArgs: [prensaId],
     );
-    
+
     if (prensasResult.isEmpty) {
       throw Exception('Prensa não encontrada');
     }
-    
+
     final prensa = prensasResult.first;
     final fabricante = prensa['fabricante'] as String;
-    
+
     // Verificar se já existem elementos padrão para esta prensa
     final existingElements = await db.query(
       'elementos',
       where: 'prensa_id = ?',
       whereArgs: [prensaId],
     );
-    
+
     // Se já existem elementos padrão, lançar exceção informativa
     if (existingElements.isNotEmpty) {
       throw Exception('Elementos padrão já existem para esta prensa');
     }
-    
+
     // Se for Dieffenbacher, criar todos os elementos padrão
     if (fabricante == 'Dieffenbacher') {
       final elementosDieffenbacher = [
@@ -621,7 +642,7 @@ class DatabaseHelper {
           prensaId: prensaId,
         ),
       ];
-      
+
       // Inserir todos os elementos para Dieffenbacher
       for (final elemento in elementosDieffenbacher) {
         await db.insert('elementos', elemento.toMap());
@@ -670,7 +691,7 @@ class DatabaseHelper {
           prensaId: prensaId,
         ),
       ];
-      
+
       // Inserir os 4 elementos para Siempelkamp
       for (final elemento in elementosSiempelkamp) {
         await db.insert('elementos', elemento.toMap());
@@ -699,7 +720,7 @@ class DatabaseHelper {
           prensaId: prensaId,
         ),
       ];
-      
+
       // Inserir apenas os dois elementos para Kusters
       for (final elemento in elementosKusters) {
         await db.insert('elementos', elemento.toMap());
@@ -747,18 +768,8 @@ class DatabaseHelper {
           tipo: 'Corrente',
           prensaId: prensaId,
         ),
-        // 5. Bend rods
-        Elemento(
-          consumo1: 1.0,
-          consumo2: 1.0,
-          consumo3: 1.0,
-          toma: '2.0',
-          posicao: 'N/A', // Bend rods não tem posição
-          tipo: 'Bend rods',
-          prensaId: prensaId,
-        ),
       ];
-      
+
       // Inserir todos os elementos padrão na ordem
       for (final elemento in elementosPadrao) {
         await db.insert('elementos', elemento.toMap());
@@ -1015,10 +1026,10 @@ class DatabaseHelper {
 
   Future<int> deleteVisita(int visitaId) async {
     final db = await instance.database;
-    
+
     // Primeiro, buscar todas as prensas relacionadas à visita
     final prensas = await getPrensasByVisita(visitaId);
-    
+
     // Para cada prensa, excluir elementos, temperaturas e problemas relacionados
     for (var prensa in prensas) {
       // Excluir temperaturas da prensa
@@ -1027,22 +1038,22 @@ class DatabaseHelper {
         where: 'prensa_id = ?',
         whereArgs: [prensa.id],
       );
-      
+
       // Excluir problemas da prensa
       await db.delete(
         'problemas',
         where: 'prensa_id = ?',
         whereArgs: [prensa.id],
       );
-      
+
       // Buscar elementos da prensa
       final elementos = await getElementsByPrensa(prensa.id!);
-      
+
       // Para cada elemento, excluir comentários e anexos
       for (var elemento in elementos) {
         // Buscar comentários do elemento
         final comentarios = await getComentariosByElemento(elemento.id!);
-        
+
         // Para cada comentário, excluir anexos
         for (var comentario in comentarios) {
           await db.delete(
@@ -1051,14 +1062,14 @@ class DatabaseHelper {
             whereArgs: [comentario.id],
           );
         }
-        
+
         // Excluir comentários do elemento
         await db.delete(
           'comentarios_elementos',
           where: 'mypress_elemento_id = ?',
           whereArgs: [elemento.id],
         );
-        
+
         // Excluir temperaturas do elemento
         await db.delete(
           'temperaturas_elementos',
@@ -1066,7 +1077,7 @@ class DatabaseHelper {
           whereArgs: [elemento.id],
         );
       }
-      
+
       // Excluir elementos da prensa
       await db.delete(
         'elementos',
@@ -1074,14 +1085,14 @@ class DatabaseHelper {
         whereArgs: [prensa.id],
       );
     }
-    
+
     // Excluir prensas da visita
     await db.delete(
       'prensas',
       where: 'visita_id = ?',
       whereArgs: [visitaId],
     );
-    
+
     // Finalmente, excluir a visita
     return await db.delete(
       'visitas',
@@ -1113,7 +1124,8 @@ class DatabaseHelper {
       whereArgs: [prensaId],
       orderBy: 'data_registro DESC',
     );
-    return List.generate(maps.length, (i) => TemperaturaPrensa.fromMap(maps[i]));
+    return List.generate(
+        maps.length, (i) => TemperaturaPrensa.fromMap(maps[i]));
   }
 
   Future<int> deleteTemperaturaPrensa(int temperaturaId) async {
@@ -1143,7 +1155,7 @@ class DatabaseHelper {
 
   Future<int> deletePrensa(int prensaId) async {
     final db = await instance.database;
-    
+
     try {
       // Usar transação para garantir que todas as operações sejam executadas ou nenhuma
       return await db.transaction((txn) async {

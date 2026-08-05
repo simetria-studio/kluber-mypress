@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/temperatura_prensa_model.dart';
 import '../database/database_helper.dart';
+import '../helpers/campo_info_helper.dart';
 
 class CadastroTemperaturaScreen extends StatefulWidget {
   final int prensaId;
@@ -148,20 +149,27 @@ class _CadastroTemperaturaScreenState extends State<CadastroTemperaturaScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Row(
+                        Row(
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.thermostat,
                               color: Color(0xFFFABA00),
                             ),
-                            SizedBox(width: 8),
-                            Text(
-                              'Temperaturas',
-                              style: TextStyle(
-                                color: Color(0xFFFABA00),
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                            const SizedBox(width: 8),
+                            const Expanded(
+                              child: Text(
+                                'Temperaturas das Zonas',
+                                style: TextStyle(
+                                  color: Color(0xFFFABA00),
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
+                            ),
+                            CampoInfoHelper.botao(
+                              context,
+                              titulo: 'Temperaturas das Zonas',
+                              mensagem: CampoInfoHelper.temperaturasZonas,
                             ),
                           ],
                         ),

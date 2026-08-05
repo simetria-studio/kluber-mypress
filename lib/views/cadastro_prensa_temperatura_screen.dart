@@ -3,6 +3,8 @@ import '../models/prensa_model.dart';
 import '../models/temperatura_prensa_model.dart';
 import '../database/database_helper.dart';
 import '../helpers/espessura_constants.dart';
+import '../helpers/aplicacao_prensa_helper.dart';
+import '../helpers/campo_info_helper.dart';
 import 'selecionar_elemento_screen.dart';
 
 class CadastroPrensaTemperaturaScreen extends StatefulWidget {
@@ -18,12 +20,14 @@ class CadastroPrensaTemperaturaScreen extends StatefulWidget {
   });
 
   @override
-  State<CadastroPrensaTemperaturaScreen> createState() => _CadastroPrensaTemperaturaScreenState();
+  State<CadastroPrensaTemperaturaScreen> createState() =>
+      _CadastroPrensaTemperaturaScreenState();
 }
 
-class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperaturaScreen> {
+class _CadastroPrensaTemperaturaScreenState
+    extends State<CadastroPrensaTemperaturaScreen> {
   final _formKey = GlobalKey<FormState>();
-  
+
   // Controllers para Prensa
   final _fabricanteController = TextEditingController();
   final _comprimentoController = TextEditingController();
@@ -40,7 +44,7 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
   final _zona3Controller = TextEditingController();
   final _zona4Controller = TextEditingController();
   final _zona5Controller = TextEditingController();
-  
+
   // Controller para Comentário
   final _comentarioController = TextEditingController();
 
@@ -53,7 +57,17 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
   ];
   String? _fabricanteSelecionado;
 
-  final List<String> _tiposProdutos = ['MDF', 'MDF1', 'MDF2', 'MDP', 'MDP 1', 'MDP 2', 'OSB', 'HDF', 'OUTROS'];
+  final List<String> _tiposProdutos = [
+    'MDF',
+    'MDF1',
+    'MDF2',
+    'MDP',
+    'MDP 1',
+    'MDP 2',
+    'OSB',
+    'HDF',
+    'OUTROS'
+  ];
   String? _produtoSelecionado;
 
   final List<String> _tiposProdutosCinta = [
@@ -86,6 +100,12 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
 
   String? _espessuraSelecionada;
 
+  bool get _permiteCorrente => AplicacaoPrensaHelper.permite(
+      _fabricanteSelecionado, AplicacaoPrensaHelper.corrente);
+
+  bool get _permiteBendRods => AplicacaoPrensaHelper.permite(
+      _fabricanteSelecionado, AplicacaoPrensaHelper.bendRods);
+
   bool _isLoading = false;
   bool _showTemperaturaSection = true;
 
@@ -98,7 +118,8 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
   void _carregarDados() {
     if (widget.prensa != null) {
       _fabricanteSelecionado = widget.prensa!.fabricante;
-      _comprimentoController.text = widget.prensa!.comprimento?.toString() ?? '';
+      _comprimentoController.text =
+          widget.prensa!.comprimento?.toString() ?? '';
       _espessuraSelecionada =
           EspessuraConstants.opcaoDeValor(widget.prensa!.espressura);
       _larguraController.text = widget.prensa!.largura?.toString() ?? '';
@@ -132,20 +153,24 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
           visitaId: widget.visitaId,
           tipoPrensa: _fabricanteSelecionado!,
           fabricante: _fabricanteSelecionado!,
-          comprimento: _comprimentoController.text.isNotEmpty 
-              ? double.parse(_comprimentoController.text) 
+          comprimento: _comprimentoController.text.isNotEmpty
+              ? double.parse(_comprimentoController.text)
               : null,
           espressura: double.parse(_espessuraSelecionada!),
-          largura: _larguraController.text.isNotEmpty 
-              ? double.parse(_larguraController.text) 
+          largura: _larguraController.text.isNotEmpty
+              ? double.parse(_larguraController.text)
               : null,
           produto: _produtoSelecionado!,
           velocidade: double.parse(_velocidadeController.text),
           produtoCinta: _produtoCintaSelecionado!,
-          produtoCorrente: _produtoCorrenteSelecionado!,
-          produtoBendroads: _produtoBendroadsSelecionado!,
+          produtoCorrente:
+              _permiteCorrente ? _produtoCorrenteSelecionado! : 'N/A',
+          produtoBendroads:
+              _permiteBendRods ? _produtoBendroadsSelecionado! : 'N/A',
           torque: null,
-          comentario: _comentarioController.text.isNotEmpty ? _comentarioController.text : null,
+          comentario: _comentarioController.text.isNotEmpty
+              ? _comentarioController.text
+              : null,
         );
 
         int prensaId;
@@ -160,7 +185,8 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
         if (_showTemperaturaSection) {
           final temperatura = TemperaturaPrensa(
             id: widget.temperatura?.id,
-            dataRegistro: widget.temperatura?.dataRegistro ?? DateTime.now().toIso8601String(),
+            dataRegistro: widget.temperatura?.dataRegistro ??
+                DateTime.now().toIso8601String(),
             zona1: _zona1Controller.text.isNotEmpty
                 ? double.parse(_zona1Controller.text)
                 : null,
@@ -189,10 +215,9 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(widget.prensa != null 
-                ? 'Prensa e temperaturas atualizadas com sucesso!'
-                : 'Prensa e temperaturas cadastradas com sucesso!'
-              ),
+              content: Text(widget.prensa != null
+                  ? 'Prensa e temperaturas atualizadas com sucesso!'
+                  : 'Prensa e temperaturas cadastradas com sucesso!'),
               backgroundColor: Colors.green,
             ),
           );
@@ -231,7 +256,9 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
       appBar: AppBar(
         backgroundColor: Colors.black,
         title: Text(
-          widget.prensa != null ? 'Editar Prensa e Temperaturas' : 'Cadastrar Prensa e Temperaturas',
+          widget.prensa != null
+              ? 'Editar Prensa e Temperaturas'
+              : 'Cadastrar Prensa e Temperaturas',
           style: const TextStyle(color: Color(0xFFFABA00)),
         ),
         iconTheme: const IconThemeData(color: Color(0xFFFABA00)),
@@ -246,7 +273,9 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
                 _showTemperaturaSection = !_showTemperaturaSection;
               });
             },
-            tooltip: _showTemperaturaSection ? 'Ocultar temperaturas' : 'Mostrar temperaturas',
+            tooltip: _showTemperaturaSection
+                ? 'Ocultar temperaturas'
+                : 'Mostrar temperaturas',
           ),
         ],
       ),
@@ -263,16 +292,21 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Seção da Prensa
-                      _buildSectionHeader('Dados da Prensa', Icons.settings),
+                      _buildSectionHeader(
+                        'Dados da Prensa',
+                        Icons.settings,
+                        infoMensagem: CampoInfoHelper.dadosPrensa,
+                      ),
                       const SizedBox(height: 16),
-                      
+
                       // Fabricante
                       DropdownButtonFormField<String>(
                         value: _fabricanteSelecionado,
                         decoration: const InputDecoration(
                           labelText: 'Fabricante',
                           labelStyle: TextStyle(color: Colors.white),
-                          prefixIcon: Icon(Icons.factory, color: Color(0xFFFABA00)),
+                          prefixIcon:
+                              Icon(Icons.factory, color: Color(0xFFFABA00)),
                         ),
                         dropdownColor: Colors.grey[900],
                         style: const TextStyle(color: Colors.white),
@@ -285,6 +319,12 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
                         onChanged: (String? newValue) {
                           setState(() {
                             _fabricanteSelecionado = newValue;
+                            if (!_permiteCorrente) {
+                              _produtoCorrenteSelecionado = 'N/A';
+                            }
+                            if (!_permiteBendRods) {
+                              _produtoBendroadsSelecionado = 'N/A';
+                            }
                           });
                         },
                         validator: (value) {
@@ -305,7 +345,8 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
                               decoration: const InputDecoration(
                                 labelText: 'Comprimento - m',
                                 labelStyle: TextStyle(color: Colors.white),
-                                prefixIcon: Icon(Icons.straighten, color: Color(0xFFFABA00)),
+                                prefixIcon: Icon(Icons.straighten,
+                                    color: Color(0xFFFABA00)),
                               ),
                               style: const TextStyle(color: Colors.white),
                               keyboardType: TextInputType.number,
@@ -318,7 +359,8 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
                               decoration: const InputDecoration(
                                 labelText: 'Largura - m',
                                 labelStyle: TextStyle(color: Colors.white),
-                                prefixIcon: Icon(Icons.straighten, color: Color(0xFFFABA00)),
+                                prefixIcon: Icon(Icons.straighten,
+                                    color: Color(0xFFFABA00)),
                               ),
                               style: const TextStyle(color: Colors.white),
                               keyboardType: TextInputType.number,
@@ -334,11 +376,13 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
                         decoration: const InputDecoration(
                           labelText: 'Espessura - mm',
                           labelStyle: TextStyle(color: Colors.white),
-                          prefixIcon: Icon(Icons.height, color: Color(0xFFFABA00)),
+                          prefixIcon:
+                              Icon(Icons.height, color: Color(0xFFFABA00)),
                         ),
                         dropdownColor: Colors.grey[900],
                         style: const TextStyle(color: Colors.white),
-                        items: EspessuraConstants.opcoes.map((String espessura) {
+                        items:
+                            EspessuraConstants.opcoes.map((String espessura) {
                           return DropdownMenuItem<String>(
                             value: espessura,
                             child: Text('$espessura mm'),
@@ -364,7 +408,8 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
                         decoration: const InputDecoration(
                           labelText: 'Produto',
                           labelStyle: TextStyle(color: Colors.white),
-                          prefixIcon: Icon(Icons.inventory, color: Color(0xFFFABA00)),
+                          prefixIcon:
+                              Icon(Icons.inventory, color: Color(0xFFFABA00)),
                         ),
                         dropdownColor: Colors.grey[900],
                         style: const TextStyle(color: Colors.white),
@@ -392,9 +437,11 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
                       TextFormField(
                         controller: _velocidadeController,
                         decoration: const InputDecoration(
-                          labelText: 'Velocidade - mm/s',
+                          labelText: 'Velocidade - m/min',
                           labelStyle: TextStyle(color: Colors.white),
-                          prefixIcon: Icon(Icons.speed, color: Color(0xFFFABA00)),
+                          prefixIcon:
+                              Icon(Icons.speed, color: Color(0xFFFABA00)),
+                          suffixText: 'm/min',
                         ),
                         style: const TextStyle(color: Colors.white),
                         keyboardType: TextInputType.number,
@@ -408,7 +455,11 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
                       const SizedBox(height: 16),
 
                       // Produtos de Lubrificação
-                      _buildSectionHeader('Produtos de Lubrificação', Icons.opacity),
+                      _buildSectionHeader(
+                        'Produtos de Lubrificação',
+                        Icons.opacity,
+                        infoMensagem: CampoInfoHelper.produtosLubrificacao,
+                      ),
                       const SizedBox(height: 16),
 
                       // Produto Cinta
@@ -417,7 +468,8 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
                         decoration: const InputDecoration(
                           labelText: 'Produto Cinta',
                           labelStyle: TextStyle(color: Colors.white),
-                          prefixIcon: Icon(Icons.opacity, color: Color(0xFFFABA00)),
+                          prefixIcon:
+                              Icon(Icons.opacity, color: Color(0xFFFABA00)),
                         ),
                         dropdownColor: Colors.grey[900],
                         style: const TextStyle(color: Colors.white),
@@ -441,64 +493,74 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
                       ),
                       const SizedBox(height: 16),
 
-                      // Produto Corrente
-                      DropdownButtonFormField<String>(
-                        value: _produtoCorrenteSelecionado,
-                        decoration: const InputDecoration(
-                          labelText: 'Produto Corrente',
-                          labelStyle: TextStyle(color: Colors.white),
-                          prefixIcon: Icon(Icons.opacity, color: Color(0xFFFABA00)),
+                      if (_permiteCorrente) ...[
+                        // Produto Corrente
+                        DropdownButtonFormField<String>(
+                          value: _produtoCorrenteSelecionado,
+                          decoration: const InputDecoration(
+                            labelText: 'Produto Corrente',
+                            labelStyle: TextStyle(color: Colors.white),
+                            prefixIcon:
+                                Icon(Icons.opacity, color: Color(0xFFFABA00)),
+                          ),
+                          dropdownColor: Colors.grey[900],
+                          style: const TextStyle(color: Colors.white),
+                          items: _tiposProdutosCorrente.map((String produto) {
+                            return DropdownMenuItem<String>(
+                              value: produto,
+                              child: Text(produto),
+                            );
+                          }).toList(),
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              _produtoCorrenteSelecionado = newValue;
+                            });
+                          },
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Por favor, selecione o produto da corrente';
+                            }
+                            return null;
+                          },
                         ),
-                        dropdownColor: Colors.grey[900],
-                        style: const TextStyle(color: Colors.white),
-                        items: _tiposProdutosCorrente.map((String produto) {
-                          return DropdownMenuItem<String>(
-                            value: produto,
-                            child: Text(produto),
-                          );
-                        }).toList(),
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            _produtoCorrenteSelecionado = newValue;
-                          });
-                        },
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor, selecione o produto da corrente';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Produto Bendroads
-                      DropdownButtonFormField<String>(
-                        value: _produtoBendroadsSelecionado,
-                        decoration: const InputDecoration(
-                          labelText: 'Produto Bendroads',
-                          labelStyle: TextStyle(color: Colors.white),
-                          prefixIcon: Icon(Icons.opacity, color: Color(0xFFFABA00)),
+                        const SizedBox(height: 16),
+                      ],
+                      if (_permiteBendRods) ...[
+                        // Produto Bendroads
+                        DropdownButtonFormField<String>(
+                          value: _produtoBendroadsSelecionado,
+                          decoration: InputDecoration(
+                            labelText: 'Produto Bendroads',
+                            labelStyle: const TextStyle(color: Colors.white),
+                            prefixIcon:
+                                const Icon(Icons.opacity, color: Color(0xFFFABA00)),
+                            suffixIcon: CampoInfoHelper.botao(
+                              context,
+                              titulo: 'Bend rods',
+                              mensagem: CampoInfoHelper.bendRods,
+                            ),
+                          ),
+                          dropdownColor: Colors.grey[900],
+                          style: const TextStyle(color: Colors.white),
+                          items: _tiposProdutosBendroads.map((String produto) {
+                            return DropdownMenuItem<String>(
+                              value: produto,
+                              child: Text(produto),
+                            );
+                          }).toList(),
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              _produtoBendroadsSelecionado = newValue;
+                            });
+                          },
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Por favor, selecione o produto bendroads';
+                            }
+                            return null;
+                          },
                         ),
-                        dropdownColor: Colors.grey[900],
-                        style: const TextStyle(color: Colors.white),
-                        items: _tiposProdutosBendroads.map((String produto) {
-                          return DropdownMenuItem<String>(
-                            value: produto,
-                            child: Text(produto),
-                          );
-                        }).toList(),
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            _produtoBendroadsSelecionado = newValue;
-                          });
-                        },
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor, selecione o produto bendroads';
-                          }
-                          return null;
-                        },
-                      ),
+                      ],
                       const SizedBox(height: 32),
 
                       // Campo de Comentário
@@ -507,7 +569,8 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
                         decoration: const InputDecoration(
                           labelText: 'Comentário',
                           labelStyle: TextStyle(color: Colors.white),
-                          prefixIcon: Icon(Icons.comment, color: Color(0xFFFABA00)),
+                          prefixIcon:
+                              Icon(Icons.comment, color: Color(0xFFFABA00)),
                           enabledBorder: UnderlineInputBorder(
                             borderSide: BorderSide(color: Colors.grey),
                           ),
@@ -524,7 +587,11 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
                       // Seção de Temperaturas
                       if (_showTemperaturaSection) ...[
                         const SizedBox(height: 32),
-                        _buildSectionHeader('Temperaturas das Zonas', Icons.thermostat),
+                        _buildSectionHeader(
+                          'Temperaturas das Zonas',
+                          Icons.thermostat,
+                          infoMensagem: CampoInfoHelper.temperaturasZonas,
+                        ),
                         const SizedBox(height: 16),
 
                         // Zona 1
@@ -533,7 +600,8 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
                           decoration: const InputDecoration(
                             labelText: 'Zona 1 (°C)',
                             labelStyle: TextStyle(color: Colors.white),
-                            prefixIcon: Icon(Icons.thermostat, color: Color(0xFFFABA00)),
+                            prefixIcon: Icon(Icons.thermostat,
+                                color: Color(0xFFFABA00)),
                           ),
                           style: const TextStyle(color: Colors.white),
                           keyboardType: TextInputType.number,
@@ -546,7 +614,8 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
                           decoration: const InputDecoration(
                             labelText: 'Zona 2 (°C)',
                             labelStyle: TextStyle(color: Colors.white),
-                            prefixIcon: Icon(Icons.thermostat, color: Color(0xFFFABA00)),
+                            prefixIcon: Icon(Icons.thermostat,
+                                color: Color(0xFFFABA00)),
                           ),
                           style: const TextStyle(color: Colors.white),
                           keyboardType: TextInputType.number,
@@ -559,7 +628,8 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
                           decoration: const InputDecoration(
                             labelText: 'Zona 3 (°C)',
                             labelStyle: TextStyle(color: Colors.white),
-                            prefixIcon: Icon(Icons.thermostat, color: Color(0xFFFABA00)),
+                            prefixIcon: Icon(Icons.thermostat,
+                                color: Color(0xFFFABA00)),
                           ),
                           style: const TextStyle(color: Colors.white),
                           keyboardType: TextInputType.number,
@@ -572,7 +642,8 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
                           decoration: const InputDecoration(
                             labelText: 'Zona 4 (°C)',
                             labelStyle: TextStyle(color: Colors.white),
-                            prefixIcon: Icon(Icons.thermostat, color: Color(0xFFFABA00)),
+                            prefixIcon: Icon(Icons.thermostat,
+                                color: Color(0xFFFABA00)),
                           ),
                           style: const TextStyle(color: Colors.white),
                           keyboardType: TextInputType.number,
@@ -585,7 +656,8 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
                           decoration: const InputDecoration(
                             labelText: 'Zona 5 (°C)',
                             labelStyle: TextStyle(color: Colors.white),
-                            prefixIcon: Icon(Icons.thermostat, color: Color(0xFFFABA00)),
+                            prefixIcon: Icon(Icons.thermostat,
+                                color: Color(0xFFFABA00)),
                           ),
                           style: const TextStyle(color: Colors.white),
                           keyboardType: TextInputType.number,
@@ -605,7 +677,9 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
                             ),
                           ),
                           child: Text(
-                            widget.prensa != null ? 'ATUALIZAR' : 'SALVAR E CONTINUAR',
+                            widget.prensa != null
+                                ? 'ATUALIZAR'
+                                : 'SALVAR E CONTINUAR',
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -622,7 +696,11 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
     );
   }
 
-  Widget _buildSectionHeader(String title, IconData icon) {
+  Widget _buildSectionHeader(
+    String title,
+    IconData icon, {
+    String? infoMensagem,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -637,14 +715,22 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
         children: [
           Icon(icon, color: const Color(0xFFFABA00), size: 20),
           const SizedBox(width: 12),
-          Text(
-            title,
-            style: const TextStyle(
-              color: Color(0xFFFABA00),
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                color: Color(0xFFFABA00),
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
+          if (infoMensagem != null)
+            CampoInfoHelper.botao(
+              context,
+              titulo: title,
+              mensagem: infoMensagem,
+            ),
         ],
       ),
     );
@@ -668,4 +754,4 @@ class _CadastroPrensaTemperaturaScreenState extends State<CadastroPrensaTemperat
     _comentarioController.dispose();
     super.dispose();
   }
-} 
+}

@@ -10,6 +10,10 @@ class ClienteService {
   static const String _clientesKey = 'cached_clientes';
   static const String _usuariosKey = 'cached_usuarios_kluber';
   static const String _lastUpdateKey = 'last_clientes_update';
+
+  // A resposta de clientes trafega sem Content-Length e ocasionalmente chega
+  // com bytes faltando, o que quebra o parsing. Nesse caso vale retentar.
+  static const int _maxTentativas = 3;
   
   // Singleton pattern para garantir uma única instância
   static final ClienteService _instance = ClienteService._internal();
@@ -21,74 +25,90 @@ class ClienteService {
   Future<List<Cliente>> getClientes() async {
     // Inicializar timer de atualização automática na primeira chamada
     _initAutoUpdate();
-    
-    try {
-      final response = await http.post(
-        Uri.parse(UrlHelper.clientesUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Accept-Charset': 'utf-8',
-        },
-      );
 
-      if (response.statusCode == 200) {
-        if (response.body.isEmpty) {
-          print('⚠️ Resposta vazia do servidor, usando cache');
-          return await _getClientesCache();
-        }
-
-        try {
-          final List<dynamic> data = json.decode(response.body);
-          print('📊 Clientes carregados do servidor: ${data.length} registros');
-          
-          if (data.isEmpty) {
-            print('⚠️ Lista vazia do servidor, usando cache');
-            return await _getClientesCache();
-          }
-
-          // Processar clientes com tratamento individual de erros
-          final List<Cliente> clientes = [];
-          int erros = 0;
-
-          for (int i = 0; i < data.length; i++) {
-            try {
-              final cliente = Cliente.fromJson(data[i]);
-              clientes.add(cliente);
-            } catch (e) {
-              erros++;
-              print('⚠️ Erro ao processar cliente ${i + 1}: $e');
-            }
-          }
-
-          if (clientes.isNotEmpty) {
-            await _salvarClientesCache(clientes);
-            await _salvarUltimaAtualizacao();
-            
-            if (erros > 0) {
-              print('⚠️ ${erros} clientes com erro foram ignorados');
-            }
-            
-            return clientes;
-          } else {
-            print('❌ Nenhum cliente válido, usando cache');
-            return await _getClientesCache();
-          }
-          
-        } catch (formatException) {
-          print('❌ Erro ao decodificar JSON: $formatException');
-          print('📝 Usando cache local devido a erro de parsing');
-          return await _getClientesCache();
-        }
-      } else {
-        print('⚠️ Status ${response.statusCode}, usando cache');
-        return await _getClientesCache();
-      }
-    } catch (e) {
-      print('❌ Erro ao carregar clientes do servidor: $e');
-      print('📝 Retornando dados do cache local');
-      return await _getClientesCache();
+    final clientes = await _baixarClientes();
+    if (clientes != null && clientes.isNotEmpty) {
+      return clientes;
     }
+
+    print('📝 Usando cache local');
+    return await _getClientesCache();
+  }
+
+  /// Baixa os clientes do servidor, retentando quando o corpo da resposta
+  /// chega corrompido. Retorna `null` quando não foi possível obter a lista.
+  Future<List<Cliente>?> _baixarClientes() async {
+    for (int tentativa = 1; tentativa <= _maxTentativas; tentativa++) {
+      try {
+        final response = await http.post(
+          Uri.parse(UrlHelper.clientesUrl),
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Accept-Charset': 'utf-8',
+          },
+        ).timeout(const Duration(seconds: 30));
+
+        if (response.statusCode != 200) {
+          print('⚠️ Status ${response.statusCode} ao carregar clientes');
+          return null;
+        }
+
+        if (response.bodyBytes.isEmpty) {
+          print('⚠️ Resposta vazia do servidor');
+          return null;
+        }
+
+        // Decodifica a partir dos bytes: quando a resposta vem sem charset,
+        // response.body cai em latin-1 e corrompe os acentos.
+        final corpo = utf8.decode(response.bodyBytes, allowMalformed: true);
+
+        final List<dynamic> data = json.decode(corpo);
+        print('📊 Clientes recebidos do servidor: ${data.length} registros');
+
+        if (data.isEmpty) {
+          print('⚠️ Lista de clientes vazia retornada do servidor');
+          return null;
+        }
+
+        final List<Cliente> clientes = [];
+        int erros = 0;
+
+        for (int i = 0; i < data.length; i++) {
+          try {
+            clientes.add(Cliente.fromJson(data[i]));
+          } catch (e) {
+            erros++;
+            print('⚠️ Erro ao processar cliente ${i + 1}: $e');
+          }
+        }
+
+        if (erros > 0) {
+          print('⚠️ $erros clientes com erro foram ignorados');
+        }
+
+        if (clientes.isEmpty) {
+          print('❌ Nenhum cliente válido foi processado');
+          return null;
+        }
+
+        await _salvarClientesCache(clientes);
+        await _salvarUltimaAtualizacao();
+        print('✅ Cache atualizado: ${clientes.length} clientes salvos');
+        return clientes;
+      } catch (e) {
+        // Corpo truncado ou conexão encerrada no meio do envio. A leitura é
+        // idempotente, então vale repetir antes de cair no cache.
+        print('❌ Falha ao baixar clientes '
+            '(tentativa $tentativa/$_maxTentativas): $e');
+        if (tentativa == _maxTentativas) {
+          return null;
+        }
+        await Future.delayed(Duration(milliseconds: 500 * tentativa));
+      }
+    }
+
+    return null;
   }
 
   // Método otimizado para busca local ultra-rápida
@@ -186,81 +206,10 @@ class ClienteService {
 
   Future<void> _atualizarClientesAutomaticamente() async {
     print('🔄 Iniciando atualização automática de clientes...');
-    
-    try {
-      final response = await http.post(
-        Uri.parse(UrlHelper.clientesUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Accept-Charset': 'utf-8',
-        },
-      ).timeout(const Duration(seconds: 30));
 
-      if (response.statusCode == 200) {
-        // Validar se o response body não está vazio
-        if (response.body.isEmpty) {
-          print('⚠️ Resposta vazia do servidor');
-          return;
-        }
-
-        // Log do tamanho da resposta para debug
-        print('📊 Tamanho da resposta: ${response.body.length} caracteres');
-        
-        try {
-          // Tentar decodificar o JSON com tratamento de erro melhorado
-          final List<dynamic> data = json.decode(response.body);
-          
-          if (data.isEmpty) {
-            print('⚠️ Lista de clientes vazia retornada do servidor');
-            return;
-          }
-
-          // Processar cada cliente individualmente para detectar problemas específicos
-          final List<Cliente> clientes = [];
-          int processados = 0;
-          int erros = 0;
-
-          for (int i = 0; i < data.length; i++) {
-            try {
-              final cliente = Cliente.fromJson(data[i]);
-              clientes.add(cliente);
-              processados++;
-            } catch (e) {
-              erros++;
-              print('⚠️ Erro ao processar cliente ${i + 1}: $e');
-              // Continuar processando os outros clientes
-            }
-          }
-          
-          if (clientes.isNotEmpty) {
-            await _salvarClientesCache(clientes);
-            await _salvarUltimaAtualizacao();
-            
-            print('✅ Cache atualizado: ${clientes.length} clientes salvos');
-            if (erros > 0) {
-              print('⚠️ ${erros} clientes com erro foram ignorados');
-            }
-          } else {
-            print('❌ Nenhum cliente válido foi processado');
-          }
-          
-        } catch (formatException) {
-          print('❌ Erro ao decodificar JSON: $formatException');
-          print('📝 Primeiros 500 caracteres da resposta:');
-          print(response.body.length > 500 ? response.body.substring(0, 500) : response.body);
-          
-          // Em caso de erro de JSON, manter o cache atual
-          print('💾 Mantendo cache atual devido a erro de parsing');
-        }
-        
-      } else {
-        print('⚠️ Erro na atualização automática - Status: ${response.statusCode}');
-        print('📝 Response body: ${response.body.length > 200 ? response.body.substring(0, 200) : response.body}');
-      }
-    } catch (e) {
-      print('❌ Erro na atualização automática de clientes: $e');
-      print('🔄 Mantendo dados em cache atual');
+    final clientes = await _baixarClientes();
+    if (clientes == null) {
+      print('💾 Mantendo cache atual');
     }
   }
 

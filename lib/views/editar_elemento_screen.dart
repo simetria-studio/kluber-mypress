@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/elemento_model.dart';
 import '../database/database_helper.dart';
+import '../helpers/aplicacao_prensa_helper.dart';
 
 class EditarElementoScreen extends StatefulWidget {
   final Elemento elemento;
@@ -25,20 +26,21 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
   bool _isLoading = false;
   bool _hasChanges = false;
 
-  // Lista de tipos de elementos
-  final List<String> _tiposElementos = [
-    'Bend rods',
-    'Cinta metálica',
-    'Corrente'
-  ];
   String? _tipoElementoSelecionado;
 
   // Lista de posições - será ajustada dinamicamente baseada no fabricante
   List<String> _posicoes = ['Superior', 'Inferior'];
   String? _posicaoSelecionada;
-  
+
   // Variável para armazenar o fabricante da prensa
   String? _fabricantePrensa;
+
+  List<String> get _tiposElementos {
+    if (_fabricantePrensa == null) {
+      return AplicacaoPrensaHelper.tiposPermitidos('Dieffenbacher');
+    }
+    return AplicacaoPrensaHelper.tiposPermitidos(_fabricantePrensa);
+  }
 
   @override
   void initState() {
@@ -46,7 +48,7 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
     _carregarDadosElemento();
     print('entrou no initstate');
     // Monitorar mudanças
-        _consumo1Controller.addListener(_checkChanges);
+    _consumo1Controller.addListener(_checkChanges);
     _consumo2Controller.addListener(_checkChanges);
     _consumo3Controller.addListener(_checkChanges);
     _tomaController.addListener(_checkChanges);
@@ -54,7 +56,7 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
     // Adicionar listeners para cálculo automático da soma
     _consumo2Controller.addListener(_calcularSoma);
     _consumo3Controller.addListener(_calcularSoma);
-    
+
     _carregarFabricantePrensa();
   }
 
@@ -65,21 +67,29 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
     _tomaController.text = widget.elemento.toma;
     _posicaoController.text = widget.elemento.posicao;
     _tipoController.text = widget.elemento.tipo;
-    
+
     // Carregar valores para os dropdowns
     _tipoElementoSelecionado = widget.elemento.tipo;
-    _posicaoSelecionada = widget.elemento.posicao != 'N/A' ? widget.elemento.posicao : null;
+    _posicaoSelecionada =
+        widget.elemento.posicao != 'N/A' ? widget.elemento.posicao : null;
   }
 
   Future<void> _carregarFabricantePrensa() async {
     try {
       // Buscar a prensa para obter o fabricante
       final prensas = await DatabaseHelper.instance.getAllPrensas();
-      final prensa = prensas.firstWhere((p) => p.id == widget.elemento.prensaId);
-      
+      final prensa =
+          prensas.firstWhere((p) => p.id == widget.elemento.prensaId);
+
       setState(() {
         _fabricantePrensa = prensa.fabricante;
-        
+
+        if (_tipoElementoSelecionado != null &&
+            !AplicacaoPrensaHelper.permite(
+                _fabricantePrensa, _tipoElementoSelecionado!)) {
+          _tipoElementoSelecionado = null;
+        }
+
         // Se for Dieffenbacher, ajustar as posições
         if (prensa.fabricante == 'Dieffenbacher') {
           _posicoes = ['Superior'];
@@ -102,7 +112,10 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
             _consumo2Controller.text != widget.elemento.consumo2.toString() ||
             _consumo3Controller.text != widget.elemento.consumo3.toString() ||
             _tomaController.text != widget.elemento.toma ||
-            _posicaoSelecionada != (widget.elemento.posicao != 'N/A' ? widget.elemento.posicao : null) ||
+            _posicaoSelecionada !=
+                (widget.elemento.posicao != 'N/A'
+                    ? widget.elemento.posicao
+                    : null) ||
             _tipoElementoSelecionado != widget.elemento.tipo;
 
     if (hasChanges != _hasChanges) {
@@ -135,12 +148,20 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
           throw Exception('Por favor, selecione o tipo do elemento');
         }
 
-        if (_tipoElementoSelecionado != 'Bend rods' && _posicaoSelecionada == null) {
+        if (!AplicacaoPrensaHelper.permite(
+            _fabricantePrensa, _tipoElementoSelecionado!)) {
+          throw Exception(
+              'Esta aplicação não é permitida para $_fabricantePrensa');
+        }
+
+        if (_tipoElementoSelecionado != 'Bend rods' &&
+            _posicaoSelecionada == null) {
           throw Exception('Por favor, selecione a posição');
         }
 
         // Para Dieffenbacher, sempre exigir posição
-        if (_fabricantePrensa == 'Dieffenbacher' && _posicaoSelecionada == null) {
+        if (_fabricantePrensa == 'Dieffenbacher' &&
+            _posicaoSelecionada == null) {
           throw Exception('Por favor, selecione a posição');
         }
 
@@ -150,7 +171,8 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
           consumo2: double.parse(_consumo2Controller.text),
           consumo3: double.parse(_consumo3Controller.text),
           toma: _tomaController.text,
-          posicao: _posicaoSelecionada ?? 'N/A', // Usar 'N/A' como valor padrão para Bend rods
+          posicao: _posicaoSelecionada ??
+              'N/A', // Usar 'N/A' como valor padrão para Bend rods
           tipo: _tipoElementoSelecionado!,
           prensaId: widget.elemento.prensaId,
           consumoOleo: widget.elemento.consumoOleo,
@@ -218,7 +240,6 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
     return true;
   }
 
-
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -257,7 +278,8 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
                           decoration: const InputDecoration(
                             labelText: 'Tipo',
                             labelStyle: TextStyle(color: Colors.white),
-                            prefixIcon: Icon(Icons.category, color: Color(0xFFFABA00)),
+                            prefixIcon:
+                                Icon(Icons.category, color: Color(0xFFFABA00)),
                             enabledBorder: UnderlineInputBorder(
                               borderSide: BorderSide(color: Colors.grey),
                             ),
@@ -293,18 +315,21 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
                         ),
                         const SizedBox(height: 16),
                         Visibility(
-                          visible: _tipoElementoSelecionado != 'Bend rods' || _fabricantePrensa == 'Dieffenbacher',
+                          visible: _tipoElementoSelecionado != 'Bend rods' ||
+                              _fabricantePrensa == 'Dieffenbacher',
                           child: DropdownButtonFormField<String>(
                             value: _posicaoSelecionada,
                             decoration: const InputDecoration(
                               labelText: 'Posição',
                               labelStyle: TextStyle(color: Colors.white),
-                              prefixIcon: Icon(Icons.place, color: Color(0xFFFABA00)),
+                              prefixIcon:
+                                  Icon(Icons.place, color: Color(0xFFFABA00)),
                               enabledBorder: UnderlineInputBorder(
                                 borderSide: BorderSide(color: Colors.grey),
                               ),
                               focusedBorder: UnderlineInputBorder(
-                                borderSide: BorderSide(color: Color(0xFFFABA00)),
+                                borderSide:
+                                    BorderSide(color: Color(0xFFFABA00)),
                               ),
                               border: UnderlineInputBorder(),
                             ),
@@ -324,11 +349,13 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
                               });
                             },
                             validator: (value) {
-                              if (_tipoElementoSelecionado != 'Bend rods' && (value == null || value.isEmpty)) {
+                              if (_tipoElementoSelecionado != 'Bend rods' &&
+                                  (value == null || value.isEmpty)) {
                                 return 'Por favor, selecione a posição';
                               }
                               // Para Dieffenbacher, sempre exigir posição
-                              if (_fabricantePrensa == 'Dieffenbacher' && (value == null || value.isEmpty)) {
+                              if (_fabricantePrensa == 'Dieffenbacher' &&
+                                  (value == null || value.isEmpty)) {
                                 return 'Por favor, selecione a posição';
                               }
                               return null;
@@ -341,7 +368,8 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
                           decoration: const InputDecoration(
                             labelText: 'Consumo Nominal',
                             labelStyle: TextStyle(color: Colors.white),
-                            prefixIcon: Icon(Icons.speed, color: Color(0xFFFABA00)),
+                            prefixIcon:
+                                Icon(Icons.speed, color: Color(0xFFFABA00)),
                             suffixText: 'l/D',
                           ),
                           style: const TextStyle(color: Colors.white),
@@ -353,14 +381,14 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
                             return null;
                           },
                         ),
-
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _consumo2Controller,
                           decoration: const InputDecoration(
                             labelText: 'Consumo Real',
                             labelStyle: TextStyle(color: Colors.white),
-                            prefixIcon: Icon(Icons.speed, color: Color(0xFFFABA00)),
+                            prefixIcon:
+                                Icon(Icons.speed, color: Color(0xFFFABA00)),
                             suffixText: 'l/D',
                             enabledBorder: UnderlineInputBorder(
                               borderSide: BorderSide(color: Colors.grey),
@@ -383,9 +411,10 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
                         TextFormField(
                           controller: _consumo3Controller,
                           decoration: const InputDecoration(
-                            labelText: 'Consumo Real Adicional',
+                            labelText: 'Consumo adicional',
                             labelStyle: TextStyle(color: Colors.white),
-                            prefixIcon: Icon(Icons.speed, color: Color(0xFFFABA00)),
+                            prefixIcon:
+                                Icon(Icons.speed, color: Color(0xFFFABA00)),
                             suffixText: 'l/D',
                             enabledBorder: UnderlineInputBorder(
                               borderSide: BorderSide(color: Colors.grey),
@@ -399,7 +428,7 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
                           keyboardType: TextInputType.number,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Por favor, insira o consumo real adicional';
+                              return 'Por favor, insira o consumo adicional';
                             }
                             return null;
                           },
@@ -410,7 +439,9 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
                           decoration: const InputDecoration(
                             labelText: 'Soma',
                             labelStyle: TextStyle(color: Colors.white),
-                            prefixIcon: Icon(Icons.settings_input_component, color: Color(0xFFFABA00)),
+                            prefixIcon: Icon(Icons.settings_input_component,
+                                color: Color(0xFFFABA00)),
+                            suffixText: 'l/D',
                           ),
                           style: const TextStyle(color: Colors.white),
                           enabled: false,
@@ -461,11 +492,11 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
     _consumo2Controller.dispose();
     _consumo3Controller.dispose();
     _tomaController.dispose();
-    
+
     // Remover listeners de cálculo da soma
     _consumo2Controller.removeListener(_calcularSoma);
     _consumo3Controller.removeListener(_calcularSoma);
-    
+
     super.dispose();
   }
 }

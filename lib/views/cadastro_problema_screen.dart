@@ -137,7 +137,7 @@ class _CadastroProblemaScreenState extends State<CadastroProblemaScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         title: const Text(
-          'Demais Aplicações',
+          'Demais pontos de Lubrificação da prensa',
           style: TextStyle(color: Color(0xFFFABA00)),
         ),
         iconTheme: const IconThemeData(color: Color(0xFFFABA00)),
@@ -163,7 +163,7 @@ class _CadastroProblemaScreenState extends State<CadastroProblemaScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Lubrificante do Redutor Principal',
+                        'Lubrificação dos redutores de acionamento (principal prensa)',
                         style: TextStyle(
                           color: Color(0xFFFABA00),
                           fontSize: 18,
@@ -174,7 +174,7 @@ class _CadastroProblemaScreenState extends State<CadastroProblemaScreen> {
                       DropdownButtonFormField<String>(
                         value: _lubrificanteSelecionado,
                         decoration: const InputDecoration(
-                          labelText: 'Lubrificante do Lubrificante do Redutor Principal',
+                          labelText: 'Lubrificante',
                           labelStyle: TextStyle(color: Colors.white),
                           prefixIcon:
                               Icon(Icons.oil_barrel, color: Color(0xFFFABA00)),
@@ -205,11 +205,12 @@ class _CadastroProblemaScreenState extends State<CadastroProblemaScreen> {
                       const SizedBox(height: 24),
                       Row(
                         children: [
-                          const Text(
-                            'Problema no Lubrificante do Redutor Principal',
-                            style: TextStyle(color: Colors.white),
+                          const Expanded(
+                            child: Text(
+                              'Problema nos redutores de acionamento',
+                              style: TextStyle(color: Colors.white),
+                            ),
                           ),
-                          const Spacer(),
                           Switch(
                             value: _problemaRedutorPrincipal,
                             onChanged: (bool value) {
@@ -230,7 +231,7 @@ class _CadastroProblemaScreenState extends State<CadastroProblemaScreen> {
                             maxLines: 3,
                             decoration: InputDecoration(
                               hintText:
-                                  'Descreva o problema no Lubrificante do Redutor Principal...',
+                                  'Descreva o problema nos redutores de acionamento...',
                               hintStyle: TextStyle(color: Colors.grey[400]),
                               filled: true,
                               fillColor: Colors.grey[900],
@@ -281,7 +282,7 @@ class _CadastroProblemaScreenState extends State<CadastroProblemaScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                                                        'Rolamento da zona quente',
+                                                        'Lubrificação do rolamento das zonas quentes',
                         style: TextStyle(
                           color: Color(0xFFFABA00),
                           fontSize: 18,
@@ -398,7 +399,7 @@ class _CadastroProblemaScreenState extends State<CadastroProblemaScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Rolamento da zona quente',
+                        'Lubrificação do rolamento dos tambores',
                         style: TextStyle(
                           color: Color(0xFFFABA00),
                           fontSize: 18,
@@ -409,7 +410,7 @@ class _CadastroProblemaScreenState extends State<CadastroProblemaScreen> {
                       DropdownButtonFormField<String>(
                         value: _graxaTamborSelecionada,
                         decoration: const InputDecoration(
-                          labelText: 'Graxa do Tambor Principal',
+                          labelText: 'Graxa para Tambor',
                           labelStyle: TextStyle(color: Colors.white),
                           prefixIcon:
                               Icon(Icons.oil_barrel, color: Color(0xFFFABA00)),
@@ -440,11 +441,12 @@ class _CadastroProblemaScreenState extends State<CadastroProblemaScreen> {
                       const SizedBox(height: 24),
                       Row(
                         children: [
-                          const Text(
-                            'Problema no Tambor Principal',
-                            style: TextStyle(color: Colors.white),
+                          const Expanded(
+                            child: Text(
+                              'Problema no rolamento dos tambores',
+                              style: TextStyle(color: Colors.white),
+                            ),
                           ),
-                          const Spacer(),
                           Switch(
                             value: _problemaTamborPrincipal,
                             onChanged: (bool value) {
@@ -465,7 +467,7 @@ class _CadastroProblemaScreenState extends State<CadastroProblemaScreen> {
                             maxLines: 3,
                             decoration: InputDecoration(
                               hintText:
-                                  'Descreva o problema no tambor principal...',
+                                  'Descreva o problema no rolamento dos tambores...',
                               hintStyle: TextStyle(color: Colors.grey[400]),
                               filled: true,
                               fillColor: Colors.grey[900],

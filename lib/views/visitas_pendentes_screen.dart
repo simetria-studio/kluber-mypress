@@ -3,6 +3,8 @@ import '../models/visita_model.dart';
 import '../models/problema_model.dart';
 import '../models/elemento_model.dart';
 import '../database/database_helper.dart';
+import '../helpers/aplicacao_prensa_helper.dart';
+import '../helpers/unidade_medida_constants.dart';
 import '../services/api_service.dart';
 import '../widgets/custom_bottom_nav.dart';
 import 'cadastro_visita_screen.dart';
@@ -64,10 +66,17 @@ class _VisitasPendentesScreenState extends State<VisitasPendentesScreen> {
     }
   }
 
-  Map<String, dynamic> _montarAplicacoesPrensa(List<Elemento> elementos) {
+  Map<String, dynamic> _montarAplicacoesPrensa(
+    List<Elemento> elementos, {
+    String? fabricante,
+  }) {
     final Map<String, Map<String, dynamic>> aplicacoes = {};
 
     for (final elemento in elementos) {
+      if (!AplicacaoPrensaHelper.permite(fabricante, elemento.tipo)) {
+        continue;
+      }
+
       final tipo = _normalizarTipoAplicacao(elemento.tipo);
       aplicacoes.putIfAbsent(tipo, () {
         return {
@@ -103,9 +112,15 @@ class _VisitasPendentesScreenState extends State<VisitasPendentesScreen> {
             await DatabaseHelper.instance.getTemperaturasByPrensa(prensa.id!);
         final elementos =
             await DatabaseHelper.instance.getElementsByPrensa(prensa.id!);
+        final elementosPermitidos = elementos
+            .where((elemento) => AplicacaoPrensaHelper.permite(
+                  prensa.fabricante,
+                  elemento.tipo,
+                ))
+            .toList();
 
         final elementosFormatados = await Future.wait(
-          elementos.map((elemento) async {
+          elementosPermitidos.map((elemento) async {
             final elementoMap = Map<String, dynamic>.from(elemento.toMap());
             elementoMap.remove('consumo_oleo');
             elementoMap.remove('contaminacao');
@@ -133,12 +148,29 @@ class _VisitasPendentesScreenState extends State<VisitasPendentesScreen> {
           }),
         );
 
+        final prensaMap = Map<String, dynamic>.from(prensa.toMap());
+        if (!AplicacaoPrensaHelper.permite(
+          prensa.fabricante,
+          AplicacaoPrensaHelper.bendRods,
+        )) {
+          prensaMap['produto_bendroads'] = 'N/A';
+        }
+        if (!AplicacaoPrensaHelper.permite(
+          prensa.fabricante,
+          AplicacaoPrensaHelper.corrente,
+        )) {
+          prensaMap['produto_corrente'] = 'N/A';
+        }
+
         return {
-          'prensa': prensa.toMap(),
+          'prensa': prensaMap,
           'temperaturas': temperaturas.map((t) => t.toMap()).toList(),
           'aplicacoes_prensa': {
             'prensa_id': prensa.id,
-            ..._montarAplicacoesPrensa(elementos),
+            ..._montarAplicacoesPrensa(
+              elementosPermitidos,
+              fabricante: prensa.fabricante,
+            ),
           },
           'elementos': elementosFormatados,
         };
@@ -150,6 +182,7 @@ class _VisitasPendentesScreenState extends State<VisitasPendentesScreen> {
         'visita': visita.toMap(),
         'prensas': prensasFormatadas,
         'problemas': problemas.map((p) => p.toMap()).toList(),
+        'unidades': UnidadeMedidaConstants.paraReporte,
       }
     };
   }

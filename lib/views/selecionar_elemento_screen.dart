@@ -418,177 +418,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    ..._elementos.map((elemento) => Card(
-                          color: Colors.grey[900],
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(
-                              color: const Color(0xFFFABA00).withOpacity(0.3),
-                              width: 1,
-                            ),
-                          ),
-                          child: Column(
-                            children: [
-                              // Cabeçalho do elemento
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.3),
-                                  borderRadius: const BorderRadius.vertical(
-                                      top: Radius.circular(12)),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFFABA00)
-                                            .withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: const Icon(
-                                        Icons.settings,
-                                        color: Color(0xFFFABA00),
-                                        size: 24,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            elemento.tipo,
-                                            style: const TextStyle(
-                                              color: Color(0xFFFABA00),
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                        
-                                        ],
-                                      ),
-                                    ),
-                                    PopupMenuButton<String>(
-                                      icon: const Icon(Icons.more_vert,
-                                          color: Color(0xFFFABA00)),
-                                      color: Colors.grey[850],
-                                      onSelected: (value) {
-                                        if (value == 'edit') {
-                                          _editarElemento(elemento);
-                                        }
-                                      },
-                                      itemBuilder: (context) => [
-                                        PopupMenuItem(
-                                          value: 'edit',
-                                          child: Row(
-                                            children: [
-                                              const Icon(Icons.edit,
-                                                  color: Color(0xFFFABA00),
-                                                  size: 20),
-                                              const SizedBox(width: 8),
-                                              Text('Editar',
-                                                  style: TextStyle(
-                                                      color: Colors.grey[200])),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                              // Corpo do elemento
-                              Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Informações principais
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: _buildInfoItem(
-                                            icon: Icons.place,
-                                            label: 'Posição',
-                                            value: elemento.posicao,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 16),
-                                    const Divider(color: Colors.grey),
-                                    const SizedBox(height: 16),
-
-                                    // Nominal e Consumo na mesma linha
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceAround,
-                                      children: [
-                                        _buildConsumoItem(
-                                            'Nominal', elemento.consumo1),
-                                        _buildConsumoItem(
-                                            'Consumo', double.tryParse(elemento.toma) ?? 0.0),
-                                      ],
-                                    ),
-
-                                    const SizedBox(height: 16),
-
-                                    // Comentários
-                                    if (_comentariosPorElemento[elemento.id]
-                                            ?.isNotEmpty ??
-                                        false) ...[
-                                      const SizedBox(height: 16),
-                                      _buildComentariosList(
-                                          _comentariosPorElemento[
-                                              elemento.id]!),
-                                    ],
-
-                                    // Botões de ação
-                                    const SizedBox(height: 12),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: OutlinedButton.icon(
-                                            icon: const Icon(
-                                              Icons.comment,
-                                              size: 16,
-                                              color: Color(0xFFFABA00),
-                                            ),
-                                            label: const Text(
-                                              'Comentar',
-                                              style: TextStyle(
-                                                color: Color(0xFFFABA00),
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                            style: OutlinedButton.styleFrom(
-                                              foregroundColor:
-                                                  const Color(0xFFFABA00),
-                                              side: const BorderSide(
-                                                  color: Color(0xFFFABA00)),
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 0),
-                                              minimumSize: const Size(0, 32),
-                                            ),
-                                            onPressed: () =>
-                                                _adicionarComentario(elemento),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        )),
+                    ..._elementos.map(_buildElementoRow),
                     const SizedBox(height: 24),
                   ],
 
@@ -603,7 +433,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Consumo de óleo e contaminação por aplicação',
+                      'Consumo de óleo e limpeza dos componentes por aplicação',
                       style: TextStyle(
                         color: Colors.grey,
                         fontSize: 12,
@@ -621,7 +451,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Demais Aplicações',
+                          'Demais pontos de Lubrificação da prensa',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 16,
@@ -651,12 +481,14 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                                     size: 24,
                                   ),
                                   const SizedBox(width: 8),
-                                  const Text(
-                                    'Lubrificante do Redutor Principal',
-                                    style: TextStyle(
-                                      color: Color(0xFFFABA00),
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
+                                  const Expanded(
+                                    child: Text(
+                                      'Lubrificação dos redutores de acionamento (principal prensa)',
+                                      style: TextStyle(
+                                        color: Color(0xFFFABA00),
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -735,12 +567,14 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                                     size: 24,
                                   ),
                                   const SizedBox(width: 8),
-                                  const Text(
-                                    'Graxa da Zona Quente',
-                                    style: TextStyle(
-                                      color: Color(0xFFFABA00),
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
+                                  const Expanded(
+                                    child: Text(
+                                      'Lubrificação do rolamento das zonas quentes',
+                                      style: TextStyle(
+                                        color: Color(0xFFFABA00),
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -819,12 +653,14 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                                     size: 24,
                                   ),
                                   const SizedBox(width: 8),
-                                  const Text(
-                                    'Lubrificante do Tambor Principal',
-                                    style: TextStyle(
-                                      color: Color(0xFFFABA00),
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
+                                  const Expanded(
+                                    child: Text(
+                                      'Lubrificação do rolamento dos tambores',
+                                      style: TextStyle(
+                                        color: Color(0xFFFABA00),
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -905,7 +741,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                                     ),
                                   )
                                 : const Text(
-                                    'Salvar Demais Aplicações',
+                                    'Salvar demais pontos de lubrificação',
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.bold,
@@ -1036,6 +872,200 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
     );
   }
 
+  IconData _iconePorTipo(String tipo) {
+    switch (tipo) {
+      case 'Corrente':
+        return Icons.link;
+      case 'Bend rods':
+        return Icons.category;
+      default:
+        return Icons.settings;
+    }
+  }
+
+  Widget _buildElementoRow(Elemento elemento) {
+    final comentarios = _comentariosPorElemento[elemento.id] ?? [];
+
+    final descricao = StringBuffer('Posição · ${elemento.posicao}');
+    if (comentarios.isNotEmpty) {
+      descricao.write(comentarios.length == 1
+          ? ' · 1 comentário'
+          : ' · ${comentarios.length} comentários');
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.grey[900],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(0xFFFABA00).withOpacity(0.3),
+        ),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _abrirDetalhesElemento(elemento),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFABA00).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  _iconePorTipo(elemento.tipo),
+                  color: const Color(0xFFFABA00),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      elemento.tipo,
+                      style: const TextStyle(
+                        color: Color(0xFFFABA00),
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      descricao.toString(),
+                      style: TextStyle(
+                        color: Colors.grey[400],
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right,
+                color: Colors.grey,
+                size: 22,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _abrirDetalhesElemento(Elemento elemento) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.grey[900],
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) {
+        final comentarios = _comentariosPorElemento[elemento.id] ?? [];
+
+        return SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(sheetContext).size.height * 0.85,
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        _iconePorTipo(elemento.tipo),
+                        color: const Color(0xFFFABA00),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          elemento.tipo,
+                          style: const TextStyle(
+                            color: Color(0xFFFABA00),
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _buildInfoItem(
+                    icon: Icons.place,
+                    label: 'Posição',
+                    value: elemento.posicao,
+                  ),
+                  const SizedBox(height: 16),
+                  const Divider(color: Colors.grey),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildConsumoItem('Nominal', elemento.consumo1),
+                      _buildConsumoItem(
+                        'Consumo',
+                        double.tryParse(elemento.toma) ?? 0.0,
+                      ),
+                    ],
+                  ),
+                  if (comentarios.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    _buildComentariosList(comentarios),
+                  ],
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.comment,
+                              size: 16, color: Color(0xFFFABA00)),
+                          label: const Text('Comentar'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFFFABA00),
+                            side: const BorderSide(color: Color(0xFFFABA00)),
+                          ),
+                          onPressed: () {
+                            Navigator.pop(sheetContext);
+                            _adicionarComentario(elemento);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.edit,
+                              size: 16, color: Colors.black),
+                          label: const Text('Editar'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFABA00),
+                            foregroundColor: Colors.black,
+                          ),
+                          onPressed: () {
+                            Navigator.pop(sheetContext);
+                            _editarElemento(elemento);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   bool _isElementoMonitorado(Elemento elemento) {
     return elemento.tipo == 'Cinta metálica' ||
         elemento.tipo == 'Corrente' ||
@@ -1117,7 +1147,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
           DropdownButtonFormField<String>(
             value: _contaminacaoPorTipo[tipo],
             decoration: const InputDecoration(
-              labelText: 'Contaminação',
+              labelText: 'Limpeza dos componentes',
               labelStyle: TextStyle(color: Color(0xFFFABA00)),
               border: OutlineInputBorder(),
               enabledBorder: OutlineInputBorder(
@@ -1251,7 +1281,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Demais Aplicações salva com sucesso!'),
+              content: Text('Demais pontos de lubrificação salvos com sucesso!'),
               backgroundColor: Colors.green,
             ),
           );

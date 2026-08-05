@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/elemento_model.dart';
 import '../database/database_helper.dart';
+import '../helpers/aplicacao_prensa_helper.dart';
 
 class CadastroElementoScreen extends StatefulWidget {
   final int prensaId;
@@ -23,20 +24,17 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
   final _posicaoController = TextEditingController();
   final _tipoController = TextEditingController();
 
-  // Adicione esta lista de tipos de elementos
-  final List<String> _tiposElementos = [
-    'Bend rods',
-    'Cinta metálica',
-    'Corrente'
-  ];
   String? _tipoElementoSelecionado;
 
   // Lista de posições - será ajustada dinamicamente baseada no fabricante
   List<String> _posicoes = ['Superior', 'Inferior'];
   String? _posicaoSelecionada;
-  
+
   // Variável para armazenar o fabricante da prensa
   String? _fabricantePrensa;
+
+  List<String> get _tiposElementos =>
+      AplicacaoPrensaHelper.tiposPermitidos(_fabricantePrensa);
 
   @override
   void initState() {
@@ -51,10 +49,10 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
       // Buscar a prensa para obter o fabricante
       final prensas = await DatabaseHelper.instance.getAllPrensas();
       final prensa = prensas.firstWhere((p) => p.id == widget.prensaId);
-      
+
       setState(() {
         _fabricantePrensa = prensa.fabricante;
-        
+
         // Se for Dieffenbacher, ajustar as posições
         if (prensa.fabricante == 'Dieffenbacher') {
           _posicoes = ['Superior'];
@@ -90,12 +88,20 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
           throw Exception('Por favor, selecione o tipo do elemento');
         }
 
-        if (_tipoElementoSelecionado != 'Bend rods' && _posicaoSelecionada == null) {
+        if (!AplicacaoPrensaHelper.permite(
+            _fabricantePrensa, _tipoElementoSelecionado!)) {
+          throw Exception(
+              'Esta aplicação não é permitida para $_fabricantePrensa');
+        }
+
+        if (_tipoElementoSelecionado != 'Bend rods' &&
+            _posicaoSelecionada == null) {
           throw Exception('Por favor, selecione a posição');
         }
 
         // Para Dieffenbacher, sempre exigir posição
-        if (_fabricantePrensa == 'Dieffenbacher' && _posicaoSelecionada == null) {
+        if (_fabricantePrensa == 'Dieffenbacher' &&
+            _posicaoSelecionada == null) {
           throw Exception('Por favor, selecione a posição');
         }
 
@@ -104,7 +110,8 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
           consumo2: double.parse(_consumo2Controller.text),
           consumo3: double.parse(_consumo3Controller.text),
           toma: _tomaController.text,
-          posicao: _posicaoSelecionada ?? 'N/A', // Usar 'N/A' como valor padrão para Bend rods
+          posicao: _posicaoSelecionada ??
+              'N/A', // Usar 'N/A' como valor padrão para Bend rods
           tipo: _tipoElementoSelecionado!,
           prensaId: widget.prensaId,
         );
@@ -187,7 +194,8 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
                 ),
                 const SizedBox(height: 16),
                 Visibility(
-                  visible: _tipoElementoSelecionado != 'Bend rods' || _fabricantePrensa == 'Dieffenbacher',
+                  visible: _tipoElementoSelecionado != 'Bend rods' ||
+                      _fabricantePrensa == 'Dieffenbacher',
                   child: DropdownButtonFormField<String>(
                     value: _posicaoSelecionada,
                     decoration: const InputDecoration(
@@ -218,11 +226,13 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
                       });
                     },
                     validator: (value) {
-                      if (_tipoElementoSelecionado != 'Bend rods' && (value == null || value.isEmpty)) {
+                      if (_tipoElementoSelecionado != 'Bend rods' &&
+                          (value == null || value.isEmpty)) {
                         return 'Por favor, selecione a posição';
                       }
                       // Para Dieffenbacher, sempre exigir posição
-                      if (_fabricantePrensa == 'Dieffenbacher' && (value == null || value.isEmpty)) {
+                      if (_fabricantePrensa == 'Dieffenbacher' &&
+                          (value == null || value.isEmpty)) {
                         return 'Por favor, selecione a posição';
                       }
                       return null;
@@ -260,7 +270,7 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
                   controller: _consumo3Controller,
                   style: const TextStyle(color: Colors.white),
                   decoration: const InputDecoration(
-                    labelText: 'Consumo Real Adicional',
+                    labelText: 'Consumo adicional',
                     prefixIcon: Icon(Icons.speed, color: Color(0xFFFABA00)),
                     suffixText: 'l/D',
                   ),
@@ -276,6 +286,7 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
                     labelText: 'Soma',
                     prefixIcon: Icon(Icons.settings_input_component,
                         color: Color(0xFFFABA00)),
+                    suffixText: 'l/D',
                   ),
                   enabled: false,
                   validator: (value) =>

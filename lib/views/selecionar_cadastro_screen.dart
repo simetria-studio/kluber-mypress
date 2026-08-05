@@ -210,73 +210,127 @@ class _SelecionarCadastroScreenState extends State<SelecionarCadastroScreen> {
                                           ],
                                         ),
                                       ),
-                                      IconButton(
+                                      PopupMenuButton<String>(
                                         icon: const Icon(
-                                          Icons.thermostat,
+                                          Icons.more_vert,
                                           color: Color(0xFFFABA00),
                                         ),
-                                        onPressed: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) => CadastroTemperaturaScreen(
-                                                prensaId: prensa.id!,
-                                              ),
-                                            ),
-                                          ).then((value) {
-                                            if (value == true) {
-                                              setState(() {});
-                                            }
-                                          });
+                                        color: Colors.grey[850],
+                                        onSelected: (value) {
+                                          switch (value) {
+                                            case 'edit':
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      CadastroPrensaScreen(
+                                                    visitaId: widget.visitaId,
+                                                    prensa: prensa,
+                                                  ),
+                                                ),
+                                              ).then((ok) {
+                                                if (ok == true) {
+                                                  _carregarDados();
+                                                }
+                                              });
+                                              break;
+                                            case 'aplicacoes':
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      SelecionarElementoScreen(
+                                                    prensaId: prensa.id!,
+                                                  ),
+                                                ),
+                                              ).then((ok) {
+                                                if (ok == true) {
+                                                  _carregarDados();
+                                                }
+                                              });
+                                              break;
+                                            case 'temperaturas':
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      CadastroTemperaturaScreen(
+                                                    prensaId: prensa.id!,
+                                                  ),
+                                                ),
+                                              ).then((ok) {
+                                                if (ok == true) {
+                                                  setState(() {});
+                                                }
+                                              });
+                                              break;
+                                            case 'delete':
+                                              _confirmarExclusao(prensa);
+                                              break;
+                                          }
                                         },
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(
-                                          Icons.settings,
-                                          color: Color(0xFFFABA00),
-                                        ),
-                                        onPressed: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) => SelecionarElementoScreen(
-                                                prensaId: prensa.id!,
-                                              ),
+                                        itemBuilder: (context) => [
+                                          PopupMenuItem(
+                                            value: 'edit',
+                                            child: Row(
+                                              children: [
+                                                const Icon(Icons.edit,
+                                                    color: Color(0xFFFABA00),
+                                                    size: 20),
+                                                const SizedBox(width: 8),
+                                                Text('Editar prensa',
+                                                    style: TextStyle(
+                                                        color:
+                                                            Colors.grey[200])),
+                                              ],
                                             ),
-                                          ).then((value) {
-                                            if (value == true) {
-                                              _carregarDados();
-                                            }
-                                          });
-                                        },
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(
-                                          Icons.edit,
-                                          color: Color(0xFFFABA00),
-                                        ),
-                                        onPressed: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) => CadastroPrensaScreen(
-                                                visitaId: widget.visitaId,
-                                                prensa: prensa,
-                                              ),
+                                          ),
+                                          PopupMenuItem(
+                                            value: 'aplicacoes',
+                                            child: Row(
+                                              children: [
+                                                const Icon(Icons.settings,
+                                                    color: Color(0xFFFABA00),
+                                                    size: 20),
+                                                const SizedBox(width: 8),
+                                                Text('Aplicações',
+                                                    style: TextStyle(
+                                                        color:
+                                                            Colors.grey[200])),
+                                              ],
                                             ),
-                                          ).then((value) {
-                                            if (value == true) {
-                                              _carregarDados();
-                                            }
-                                          });
-                                        },
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(
-                                          Icons.delete_outline,
-                                          color: Colors.red,
-                                        ),
-                                        onPressed: () => _confirmarExclusao(prensa),
+                                          ),
+                                          PopupMenuItem(
+                                            value: 'temperaturas',
+                                            child: Row(
+                                              children: [
+                                                const Icon(Icons.thermostat,
+                                                    color: Color(0xFFFABA00),
+                                                    size: 20),
+                                                const SizedBox(width: 8),
+                                                Text('Temperaturas',
+                                                    style: TextStyle(
+                                                        color:
+                                                            Colors.grey[200])),
+                                              ],
+                                            ),
+                                          ),
+                                          PopupMenuItem(
+                                            value: 'delete',
+                                            child: Row(
+                                              children: [
+                                                const Icon(Icons.delete_outline,
+                                                    color: Colors.red,
+                                                    size: 20),
+                                                const SizedBox(width: 8),
+                                                Text('Excluir',
+                                                    style: TextStyle(
+                                                        color:
+                                                            Colors.grey[200])),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
@@ -344,41 +398,31 @@ class _SelecionarCadastroScreenState extends State<SelecionarCadastroScreen> {
                                                         fontSize: 12,
                                                       ),
                                                     ),
-                                                    Row(
-                                                      children: [
-                                                        IconButton(
-                                                          icon: const Icon(
-                                                            Icons.edit,
-                                                            color: Color(0xFFFABA00),
-                                                            size: 16,
-                                                          ),
-                                                          constraints: const BoxConstraints(),
-                                                          padding: const EdgeInsets.all(8),
-                                                          onPressed: () => _editarTemperatura(temp!, prensa.id!),
-                                                        ),
-                                                        IconButton(
-                                                          icon: const Icon(
-                                                            Icons.delete,
-                                                            color: Colors.red,
-                                                            size: 16,
-                                                          ),
-                                                          constraints: const BoxConstraints(),
-                                                          padding: const EdgeInsets.all(8),
-                                                          onPressed: () => _confirmarExclusaoTemperatura(temp!),
-                                                        ),
-                                                      ],
+                                                    IconButton(
+                                                      icon: const Icon(
+                                                        Icons.delete,
+                                                        color: Colors.red,
+                                                        size: 16,
+                                                      ),
+                                                      constraints: const BoxConstraints(),
+                                                      padding: const EdgeInsets.all(8),
+                                                      onPressed: () => _confirmarExclusaoTemperatura(temp!),
                                                     ),
                                                   ],
                                                 ),
                                                 const SizedBox(height: 4),
-                                                Row(
-                                                  children: [
-                                                    _buildTemperaturaItem('Z1', temp?.zona1),
-                                                    _buildTemperaturaItem('Z2', temp?.zona2),
-                                                    _buildTemperaturaItem('Z3', temp?.zona3),
-                                                    _buildTemperaturaItem('Z4', temp?.zona4),
-                                                    _buildTemperaturaItem('Z5', temp?.zona5),
-                                                  ],
+                                                InkWell(
+                                                  onTap: () => _editarTemperatura(temp!, prensa.id!),
+                                                  borderRadius: BorderRadius.circular(8),
+                                                  child: Row(
+                                                    children: [
+                                                      _buildTemperaturaItem('Z1', temp?.zona1),
+                                                      _buildTemperaturaItem('Z2', temp?.zona2),
+                                                      _buildTemperaturaItem('Z3', temp?.zona3),
+                                                      _buildTemperaturaItem('Z4', temp?.zona4),
+                                                      _buildTemperaturaItem('Z5', temp?.zona5),
+                                                    ],
+                                                  ),
                                                 ),
                                                 if (temperaturas.last != temp)
                                                   const Divider(height: 8, color: Colors.grey),
@@ -526,7 +570,7 @@ class _SelecionarCadastroScreenState extends State<SelecionarCadastroScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Demais Aplicações Relatados',
+                    'Demais pontos de Lubrificação Relatados',
                     style: TextStyle(
                       color: Color(0xFFFABA00),
                       fontSize: 16,
@@ -570,7 +614,7 @@ class _SelecionarCadastroScreenState extends State<SelecionarCadastroScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
-                          'Demais Aplicações',
+                          'Demais pontos de Lubrificação da prensa',
                           style: TextStyle(
                             color: Color(0xFFFABA00),
                             fontSize: 16,
@@ -596,7 +640,7 @@ class _SelecionarCadastroScreenState extends State<SelecionarCadastroScreen> {
                     ),
                     const SizedBox(height: 16),
                     _buildProblemaItem(
-                      'Lubrificante do Redutor Principal',
+                      'Lubrificação dos redutores de acionamento (principal prensa)',
                       problema.problemaRedutorPrincipal == '1',
                       problema.comentarioRedutorPrincipal,
                       problema.lubrificanteRedutorPrincipal,
@@ -610,7 +654,7 @@ class _SelecionarCadastroScreenState extends State<SelecionarCadastroScreen> {
                     ),
                     const Divider(color: Colors.grey),
                     _buildProblemaItem(
-                      'Rolamento da zona quente',
+                      'Lubrificação do rolamento dos tambores',
                       problema.problemaTamborPrincipal == '1',
                       problema.comentarioTamborPrincipal,
                       problema.graxaTamborPrincipal,
@@ -618,7 +662,7 @@ class _SelecionarCadastroScreenState extends State<SelecionarCadastroScreen> {
                     if (problema.graxaRolamentosZonasQuentes != null) ...[
                       const Divider(color: Colors.grey),
                       _buildProblemaItem(
-                        'Graxa Rolamentos Zonas Quentes',
+                        'Lubrificação do rolamento das zonas quentes',
                         true,
                         null,
                         problema.graxaRolamentosZonasQuentes,
