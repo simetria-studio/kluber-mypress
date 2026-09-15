@@ -1,5 +1,5 @@
 class EspessuraConstants {
-  static const List<String> opcoes = ['6', '9', '12', '15', '18', '25'];
+  static final List<String> opcoes = List.generate(29, (i) => '${i + 2}');
 
   static String? opcaoDeValor(double espressura) {
     final valorInteiro = espressura.toInt();

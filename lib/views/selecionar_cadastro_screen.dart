@@ -250,19 +250,7 @@ class _SelecionarCadastroScreenState extends State<SelecionarCadastroScreen> {
                                               });
                                               break;
                                             case 'temperaturas':
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      CadastroTemperaturaScreen(
-                                                    prensaId: prensa.id!,
-                                                  ),
-                                                ),
-                                              ).then((ok) {
-                                                if (ok == true) {
-                                                  setState(() {});
-                                                }
-                                              });
+                                              _editarTemperatura(prensa.id!);
                                               break;
                                             case 'delete':
                                               _confirmarExclusao(prensa);
@@ -389,13 +377,16 @@ class _SelecionarCadastroScreenState extends State<SelecionarCadastroScreen> {
                                               crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
                                                 Row(
-                                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                                   children: [
-                                                    Text(
-                                                      'Data: ${temp?.dataRegistro ?? '-'}',
-                                                      style: const TextStyle(
-                                                        color: Colors.grey,
-                                                        fontSize: 12,
+                                                    Expanded(
+                                                      child: Text(
+                                                        'Data: ${temp?.dataRegistro ?? '-'}',
+                                                        style: const TextStyle(
+                                                          color: Colors.grey,
+                                                          fontSize: 12,
+                                                        ),
+                                                        overflow:
+                                                            TextOverflow.ellipsis,
                                                       ),
                                                     ),
                                                     IconButton(
@@ -404,25 +395,25 @@ class _SelecionarCadastroScreenState extends State<SelecionarCadastroScreen> {
                                                         color: Colors.red,
                                                         size: 16,
                                                       ),
-                                                      constraints: const BoxConstraints(),
-                                                      padding: const EdgeInsets.all(8),
-                                                      onPressed: () => _confirmarExclusaoTemperatura(temp!),
+                                                      constraints:
+                                                          const BoxConstraints(),
+                                                      padding:
+                                                          const EdgeInsets.all(8),
+                                                      onPressed: () =>
+                                                          _confirmarExclusaoTemperatura(
+                                                              temp!),
                                                     ),
                                                   ],
                                                 ),
                                                 const SizedBox(height: 4),
-                                                InkWell(
-                                                  onTap: () => _editarTemperatura(temp!, prensa.id!),
-                                                  borderRadius: BorderRadius.circular(8),
-                                                  child: Row(
-                                                    children: [
-                                                      _buildTemperaturaItem('Z1', temp?.zona1),
-                                                      _buildTemperaturaItem('Z2', temp?.zona2),
-                                                      _buildTemperaturaItem('Z3', temp?.zona3),
-                                                      _buildTemperaturaItem('Z4', temp?.zona4),
-                                                      _buildTemperaturaItem('Z5', temp?.zona5),
-                                                    ],
-                                                  ),
+                                                Row(
+                                                  children: [
+                                                    _buildTemperaturaItem('Z1', temp?.zona1),
+                                                    _buildTemperaturaItem('Z2', temp?.zona2),
+                                                    _buildTemperaturaItem('Z3', temp?.zona3),
+                                                    _buildTemperaturaItem('Z4', temp?.zona4),
+                                                    _buildTemperaturaItem('Z5', temp?.zona5),
+                                                  ],
                                                 ),
                                                 if (temperaturas.last != temp)
                                                   const Divider(height: 8, color: Colors.grey),
@@ -611,30 +602,28 @@ class _SelecionarCadastroScreenState extends State<SelecionarCadastroScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Demais pontos de Lubrificação da prensa',
-                          style: TextStyle(
-                            color: Color(0xFFFABA00),
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                        const Expanded(
+                          child: Text(
+                            'Demais pontos de Lubrificação da prensa',
+                            style: TextStyle(
+                              color: Color(0xFFFABA00),
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
-                        Row(
-                          children: [
-
-                            IconButton(
-                              icon: const Icon(
-                                Icons.delete,
-                                color: Colors.red,
-                                size: 20,
-                              ),
-                              constraints: const BoxConstraints(),
-                              padding: const EdgeInsets.all(8),
-                              onPressed: () => _confirmarExclusaoProblema(problema),
-                            ),
-                          ],
+                        IconButton(
+                          icon: const Icon(
+                            Icons.delete,
+                            color: Colors.red,
+                            size: 20,
+                          ),
+                          constraints: const BoxConstraints(),
+                          padding: const EdgeInsets.all(8),
+                          onPressed: () =>
+                              _confirmarExclusaoProblema(problema),
                         ),
                       ],
                     ),
@@ -684,19 +673,25 @@ class _SelecionarCadastroScreenState extends State<SelecionarCadastroScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              temProblema ? Icons.error : Icons.check_circle,
-              color: temProblema ? Colors.red : Colors.green,
-              size: 16,
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Icon(
+                temProblema ? Icons.error : Icons.check_circle,
+                color: temProblema ? Colors.red : Colors.green,
+                size: 16,
+              ),
             ),
             const SizedBox(width: 8),
-            Text(
-              titulo,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
+            Expanded(
+              child: Text(
+                titulo,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
           ],
@@ -858,13 +853,17 @@ class _SelecionarCadastroScreenState extends State<SelecionarCadastroScreen> {
     );
   }
 
-  void _editarTemperatura(TemperaturaPrensa temperatura, int prensaId) {
+  Future<void> _editarTemperatura(int prensaId) async {
+    final temperaturas =
+        await DatabaseHelper.instance.getTemperaturasByPrensa(prensaId);
+    if (!mounted) return;
+
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => CadastroTemperaturaScreen(
           prensaId: prensaId,
-          temperatura: temperatura,
+          temperatura: temperaturas.isNotEmpty ? temperaturas.first : null,
         ),
       ),
     ).then((value) {

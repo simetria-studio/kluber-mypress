@@ -558,26 +558,26 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
                 ],
                 const SizedBox(height: 32),
 
-                // Campo de Comentário
-                TextFormField(
-                  controller: _comentarioController,
-                  decoration: const InputDecoration(
-                    labelText: 'Comentário',
-                    labelStyle: TextStyle(color: Colors.white),
-                    prefixIcon: Icon(Icons.comment, color: Color(0xFFFABA00)),
-                    enabledBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: Colors.grey),
-                    ),
-                    focusedBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFFFABA00)),
-                    ),
-                    border: UnderlineInputBorder(),
-                  ),
-                  style: const TextStyle(color: Colors.white),
-                  maxLines: 3,
-                  keyboardType: TextInputType.multiline,
-                ),
-                const SizedBox(height: 32),
+                // Campo de Comentário — oculto, não é exibido em nenhum lugar
+                // TextFormField(
+                //   controller: _comentarioController,
+                //   decoration: const InputDecoration(
+                //     labelText: 'Comentário',
+                //     labelStyle: TextStyle(color: Colors.white),
+                //     prefixIcon: Icon(Icons.comment, color: Color(0xFFFABA00)),
+                //     enabledBorder: UnderlineInputBorder(
+                //       borderSide: BorderSide(color: Colors.grey),
+                //     ),
+                //     focusedBorder: UnderlineInputBorder(
+                //       borderSide: BorderSide(color: Color(0xFFFABA00)),
+                //     ),
+                //     border: UnderlineInputBorder(),
+                //   ),
+                //   style: const TextStyle(color: Colors.white),
+                //   maxLines: 3,
+                //   keyboardType: TextInputType.multiline,
+                // ),
+                // const SizedBox(height: 32),
 
                 // Temperaturas das Zonas
                 _buildSectionHeader(

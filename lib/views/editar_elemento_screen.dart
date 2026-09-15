@@ -28,19 +28,10 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
 
   String? _tipoElementoSelecionado;
 
-  // Lista de posições - será ajustada dinamicamente baseada no fabricante
-  List<String> _posicoes = ['Superior', 'Inferior'];
   String? _posicaoSelecionada;
 
   // Variável para armazenar o fabricante da prensa
   String? _fabricantePrensa;
-
-  List<String> get _tiposElementos {
-    if (_fabricantePrensa == null) {
-      return AplicacaoPrensaHelper.tiposPermitidos('Dieffenbacher');
-    }
-    return AplicacaoPrensaHelper.tiposPermitidos(_fabricantePrensa);
-  }
 
   @override
   void initState() {
@@ -83,26 +74,9 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
 
       setState(() {
         _fabricantePrensa = prensa.fabricante;
-
-        if (_tipoElementoSelecionado != null &&
-            !AplicacaoPrensaHelper.permite(
-                _fabricantePrensa, _tipoElementoSelecionado!)) {
-          _tipoElementoSelecionado = null;
-        }
-
-        // Se for Dieffenbacher, ajustar as posições
-        if (prensa.fabricante == 'Dieffenbacher') {
-          _posicoes = ['Superior'];
-        } else {
-          _posicoes = ['Superior', 'Inferior'];
-        }
       });
     } catch (e) {
       print('Erro ao carregar fabricante da prensa: $e');
-      // Em caso de erro, manter as posições padrão
-      setState(() {
-        _posicoes = ['Superior', 'Inferior'];
-      });
     }
   }
 
@@ -111,12 +85,7 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
         _consumo1Controller.text != widget.elemento.consumo1.toString() ||
             _consumo2Controller.text != widget.elemento.consumo2.toString() ||
             _consumo3Controller.text != widget.elemento.consumo3.toString() ||
-            _tomaController.text != widget.elemento.toma ||
-            _posicaoSelecionada !=
-                (widget.elemento.posicao != 'N/A'
-                    ? widget.elemento.posicao
-                    : null) ||
-            _tipoElementoSelecionado != widget.elemento.tipo;
+            _tomaController.text != widget.elemento.toma;
 
     if (hasChanges != _hasChanges) {
       setState(() {
@@ -273,8 +242,9 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        DropdownButtonFormField<String>(
-                          value: _tipoElementoSelecionado,
+                        TextFormField(
+                          controller: _tipoController,
+                          enabled: false,
                           decoration: const InputDecoration(
                             labelText: 'Tipo',
                             labelStyle: TextStyle(color: Colors.white),
@@ -283,42 +253,20 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
                             enabledBorder: UnderlineInputBorder(
                               borderSide: BorderSide(color: Colors.grey),
                             ),
-                            focusedBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Color(0xFFFABA00)),
+                            disabledBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Colors.grey),
                             ),
                             border: UnderlineInputBorder(),
                           ),
-                          icon: const Icon(Icons.arrow_drop_down,
-                              color: Color(0xFFFABA00)),
-                          dropdownColor: Colors.grey[900],
                           style: const TextStyle(color: Colors.white),
-                          items: _tiposElementos.map((String tipo) {
-                            return DropdownMenuItem<String>(
-                              value: tipo,
-                              child: Text(tipo),
-                            );
-                          }).toList(),
-                          onChanged: (String? newValue) {
-                            setState(() {
-                              _tipoElementoSelecionado = newValue;
-                              if (newValue != 'Bend rods') {
-                                _posicaoSelecionada = null;
-                              }
-                            });
-                          },
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Por favor, selecione o tipo do elemento';
-                            }
-                            return null;
-                          },
                         ),
                         const SizedBox(height: 16),
                         Visibility(
                           visible: _tipoElementoSelecionado != 'Bend rods' ||
                               _fabricantePrensa == 'Dieffenbacher',
-                          child: DropdownButtonFormField<String>(
-                            value: _posicaoSelecionada,
+                          child: TextFormField(
+                            controller: _posicaoController,
+                            enabled: false,
                             decoration: const InputDecoration(
                               labelText: 'Posição',
                               labelStyle: TextStyle(color: Colors.white),
@@ -327,39 +275,12 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
                               enabledBorder: UnderlineInputBorder(
                                 borderSide: BorderSide(color: Colors.grey),
                               ),
-                              focusedBorder: UnderlineInputBorder(
-                                borderSide:
-                                    BorderSide(color: Color(0xFFFABA00)),
+                              disabledBorder: UnderlineInputBorder(
+                                borderSide: BorderSide(color: Colors.grey),
                               ),
                               border: UnderlineInputBorder(),
                             ),
-                            icon: const Icon(Icons.arrow_drop_down,
-                                color: Color(0xFFFABA00)),
-                            dropdownColor: Colors.grey[900],
                             style: const TextStyle(color: Colors.white),
-                            items: _posicoes.map((String posicao) {
-                              return DropdownMenuItem<String>(
-                                value: posicao,
-                                child: Text(posicao),
-                              );
-                            }).toList(),
-                            onChanged: (String? newValue) {
-                              setState(() {
-                                _posicaoSelecionada = newValue;
-                              });
-                            },
-                            validator: (value) {
-                              if (_tipoElementoSelecionado != 'Bend rods' &&
-                                  (value == null || value.isEmpty)) {
-                                return 'Por favor, selecione a posição';
-                              }
-                              // Para Dieffenbacher, sempre exigir posição
-                              if (_fabricantePrensa == 'Dieffenbacher' &&
-                                  (value == null || value.isEmpty)) {
-                                return 'Por favor, selecione a posição';
-                              }
-                              return null;
-                            },
                           ),
                         ),
                         const SizedBox(height: 16),
