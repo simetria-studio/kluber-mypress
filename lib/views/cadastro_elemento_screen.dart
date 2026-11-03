@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/elemento_model.dart';
 import '../database/database_helper.dart';
 import '../helpers/aplicacao_prensa_helper.dart';
+import '../helpers/number_parse_helper.dart';
 
 class CadastroElementoScreen extends StatefulWidget {
   final int prensaId;
@@ -52,13 +53,7 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
 
       setState(() {
         _fabricantePrensa = prensa.fabricante;
-
-        // Se for Dieffenbacher, ajustar as posições
-        if (prensa.fabricante == 'Dieffenbacher') {
-          _posicoes = ['Superior'];
-        } else {
-          _posicoes = ['Superior', 'Inferior'];
-        }
+        _posicoes = ['Superior', 'Inferior'];
       });
     } catch (e) {
       print('Erro ao carregar fabricante da prensa: $e');
@@ -71,8 +66,10 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
 
   void _calcularSoma() {
     try {
-      final consumo2 = double.tryParse(_consumo2Controller.text) ?? 0;
-      final consumo3 = double.tryParse(_consumo3Controller.text) ?? 0;
+      final consumo2 =
+          NumberParseHelper.tryParse(_consumo2Controller.text) ?? 0;
+      final consumo3 =
+          NumberParseHelper.tryParse(_consumo3Controller.text) ?? 0;
       final soma = consumo2 + consumo3;
       _tomaController.text = soma.toString();
     } catch (e) {
@@ -94,24 +91,20 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
               'Esta aplicação não é permitida para $_fabricantePrensa');
         }
 
-        if (_tipoElementoSelecionado != 'Bend rods' &&
-            _posicaoSelecionada == null) {
-          throw Exception('Por favor, selecione a posição');
-        }
-
-        // Para Dieffenbacher, sempre exigir posição
-        if (_fabricantePrensa == 'Dieffenbacher' &&
-            _posicaoSelecionada == null) {
+        final exigePosicao = AplicacaoPrensaHelper.exigePosicao(
+          _fabricantePrensa,
+          _tipoElementoSelecionado!,
+        );
+        if (exigePosicao && _posicaoSelecionada == null) {
           throw Exception('Por favor, selecione a posição');
         }
 
         final elemento = Elemento(
-          consumo1: double.parse(_consumo1Controller.text),
-          consumo2: double.parse(_consumo2Controller.text),
-          consumo3: double.parse(_consumo3Controller.text),
-          toma: _tomaController.text,
-          posicao: _posicaoSelecionada ??
-              'N/A', // Usar 'N/A' como valor padrão para Bend rods
+          consumo1: NumberParseHelper.parse(_consumo1Controller.text),
+          consumo2: NumberParseHelper.parse(_consumo2Controller.text),
+          consumo3: NumberParseHelper.parse(_consumo3Controller.text),
+          toma: NumberParseHelper.normalize(_tomaController.text),
+          posicao: exigePosicao ? (_posicaoSelecionada ?? 'N/A') : 'N/A',
           tipo: _tipoElementoSelecionado!,
           prensaId: widget.prensaId,
         );
@@ -180,7 +173,8 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
                   onChanged: (String? newValue) {
                     setState(() {
                       _tipoElementoSelecionado = newValue;
-                      if (newValue != 'Bend rods') {
+                      if (!AplicacaoPrensaHelper.exigePosicao(
+                          _fabricantePrensa, newValue ?? '')) {
                         _posicaoSelecionada = null;
                       }
                     });
@@ -194,8 +188,10 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
                 ),
                 const SizedBox(height: 16),
                 Visibility(
-                  visible: _tipoElementoSelecionado != 'Bend rods' ||
-                      _fabricantePrensa == 'Dieffenbacher',
+                  visible: AplicacaoPrensaHelper.exigePosicao(
+                    _fabricantePrensa,
+                    _tipoElementoSelecionado ?? '',
+                  ),
                   child: DropdownButtonFormField<String>(
                     value: _posicaoSelecionada,
                     decoration: const InputDecoration(
@@ -226,12 +222,9 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
                       });
                     },
                     validator: (value) {
-                      if (_tipoElementoSelecionado != 'Bend rods' &&
-                          (value == null || value.isEmpty)) {
-                        return 'Por favor, selecione a posição';
-                      }
-                      // Para Dieffenbacher, sempre exigir posição
-                      if (_fabricantePrensa == 'Dieffenbacher' &&
+                      if (AplicacaoPrensaHelper.exigePosicao(
+                              _fabricantePrensa,
+                              _tipoElementoSelecionado ?? '') &&
                           (value == null || value.isEmpty)) {
                         return 'Por favor, selecione a posição';
                       }
@@ -248,9 +241,12 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
                     prefixIcon: Icon(Icons.speed, color: Color(0xFFFABA00)),
                     suffixText: 'l/D',
                   ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) =>
-                      value?.isEmpty ?? true ? 'Campo obrigatório' : null,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  validator: (value) => NumberParseHelper.validateRequired(
+                    value,
+                    field: 'consumo nominal',
+                  ),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -261,9 +257,12 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
                     prefixIcon: Icon(Icons.speed, color: Color(0xFFFABA00)),
                     suffixText: 'l/D',
                   ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) =>
-                      value?.isEmpty ?? true ? 'Campo obrigatório' : null,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  validator: (value) => NumberParseHelper.validateRequired(
+                    value,
+                    field: 'consumo real',
+                  ),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -274,9 +273,12 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
                     prefixIcon: Icon(Icons.speed, color: Color(0xFFFABA00)),
                     suffixText: 'l/D',
                   ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) =>
-                      value?.isEmpty ?? true ? 'Campo obrigatório' : null,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  validator: (value) => NumberParseHelper.validateRequired(
+                    value,
+                    field: 'consumo adicional',
+                  ),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(

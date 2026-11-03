@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../models/prensa_model.dart';
 import '../models/temperatura_prensa_model.dart';
 import '../database/database_helper.dart';
-import 'cadastro_prensa_screen.dart';
 import '../models/elemento_model.dart';
 import 'selecionar_elemento_screen.dart';
 import '../models/problema_model.dart';
@@ -210,6 +209,15 @@ class _SelecionarCadastroScreenState extends State<SelecionarCadastroScreen> {
                                           ],
                                         ),
                                       ),
+                                      IconButton(
+                                        tooltip: 'Editar prensa',
+                                        icon: const Icon(
+                                          Icons.edit,
+                                          color: Color(0xFFFABA00),
+                                        ),
+                                        onPressed: () =>
+                                            _editarPrensaCompleta(prensa),
+                                      ),
                                       PopupMenuButton<String>(
                                         icon: const Icon(
                                           Icons.more_vert,
@@ -218,22 +226,6 @@ class _SelecionarCadastroScreenState extends State<SelecionarCadastroScreen> {
                                         color: Colors.grey[850],
                                         onSelected: (value) {
                                           switch (value) {
-                                            case 'edit':
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      CadastroPrensaScreen(
-                                                    visitaId: widget.visitaId,
-                                                    prensa: prensa,
-                                                  ),
-                                                ),
-                                              ).then((ok) {
-                                                if (ok == true) {
-                                                  _carregarDados();
-                                                }
-                                              });
-                                              break;
                                             case 'aplicacoes':
                                               Navigator.push(
                                                 context,
@@ -258,21 +250,6 @@ class _SelecionarCadastroScreenState extends State<SelecionarCadastroScreen> {
                                           }
                                         },
                                         itemBuilder: (context) => [
-                                          PopupMenuItem(
-                                            value: 'edit',
-                                            child: Row(
-                                              children: [
-                                                const Icon(Icons.edit,
-                                                    color: Color(0xFFFABA00),
-                                                    size: 20),
-                                                const SizedBox(width: 8),
-                                                Text('Editar prensa',
-                                                    style: TextStyle(
-                                                        color:
-                                                            Colors.grey[200])),
-                                              ],
-                                            ),
-                                          ),
                                           PopupMenuItem(
                                             value: 'aplicacoes',
                                             child: Row(
@@ -322,6 +299,8 @@ class _SelecionarCadastroScreenState extends State<SelecionarCadastroScreen> {
                                       ),
                                     ],
                                   ),
+                                  const SizedBox(height: 12),
+                                  _buildResumoPrensa(prensa),
                                   const SizedBox(height: 16),
                                   FutureBuilder<List<TemperaturaPrensa>>(
                                     future: DatabaseHelper.instance.getTemperaturasByPrensa(prensa.id!),
@@ -629,34 +608,25 @@ class _SelecionarCadastroScreenState extends State<SelecionarCadastroScreen> {
                     ),
                     const SizedBox(height: 16),
                     _buildProblemaItem(
-                      'Lubrificação dos redutores de acionamento (principal prensa)',
+                      'Óleo do redutor (principal prensa)',
                       problema.problemaRedutorPrincipal == '1',
                       problema.comentarioRedutorPrincipal,
                       problema.lubrificanteRedutorPrincipal,
                     ),
                     const Divider(color: Colors.grey),
                     _buildProblemaItem(
-                      'Temperatura',
+                      'Graxa dos rolamentos das zonas quentes',
                       problema.problemaTemperatura == '1',
                       problema.comentarioTemperatura,
-                      null,
+                      problema.graxaRolamentosZonasQuentes,
                     ),
                     const Divider(color: Colors.grey),
                     _buildProblemaItem(
-                      'Lubrificação do rolamento dos tambores',
+                      'Graxa do rolamento dos tambores',
                       problema.problemaTamborPrincipal == '1',
                       problema.comentarioTamborPrincipal,
                       problema.graxaTamborPrincipal,
                     ),
-                    if (problema.graxaRolamentosZonasQuentes != null) ...[
-                      const Divider(color: Colors.grey),
-                      _buildProblemaItem(
-                        'Lubrificação do rolamento das zonas quentes',
-                        true,
-                        null,
-                        problema.graxaRolamentosZonasQuentes,
-                      ),
-                    ],
                   ],
                 ),
               ),
@@ -851,6 +821,71 @@ class _SelecionarCadastroScreenState extends State<SelecionarCadastroScreen> {
         );
       },
     );
+  }
+
+  Widget _buildResumoPrensa(Prensa prensa) {
+    final itens = <String>[
+      if (prensa.comprimento != null)
+        'Comprimento da prensa: ${prensa.comprimento} m',
+      if (prensa.largura != null) 'Largura da chapa: ${prensa.largura} mm',
+      'Espessura da chapa: ${prensa.espressura} mm',
+      'Produto: ${prensa.produto}',
+      'Velocidade: ${prensa.velocidade} mm/s',
+      'Cinta: ${prensa.produtoCinta}',
+      if (prensa.produtoCorrente != 'N/A')
+        'Corrente: ${prensa.produtoCorrente}',
+      if (prensa.produtoBendroads != 'N/A')
+        'Bend rods: ${prensa.produtoBendroads}',
+    ];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey[850],
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: itens
+            .map(
+              (item) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  item,
+                  style: TextStyle(
+                    color: Colors.grey[300],
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
+
+  Future<void> _editarPrensaCompleta(Prensa prensa) async {
+    final temperaturas =
+        await DatabaseHelper.instance.getTemperaturasByPrensa(prensa.id!);
+    if (!mounted) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CadastroPrensaTemperaturaScreen(
+          visitaId: widget.visitaId,
+          prensa: prensa,
+          temperatura: temperaturas.isNotEmpty ? temperaturas.first : null,
+        ),
+      ),
+    ).then((ok) {
+      if (ok == true) {
+        _carregarDados();
+      } else {
+        _carregarDados();
+      }
+    });
   }
 
   Future<void> _editarTemperatura(int prensaId) async {

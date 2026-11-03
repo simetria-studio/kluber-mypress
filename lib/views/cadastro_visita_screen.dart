@@ -5,8 +5,10 @@ import '../models/visita_model.dart';
 import '../database/database_helper.dart';
 import '../models/cliente_model.dart';
 import '../services/cliente_service.dart';
+import '../services/storage_service.dart';
 import '../models/usuario_kluber_model.dart';
 import 'cadastro_prensa_temperatura_screen.dart';
+import '../widgets/cliente_picker_sheet.dart';
 
 
 
@@ -29,8 +31,10 @@ class _CadastroVisitaScreenState extends State<CadastroVisitaScreen> {
   bool _isLoadingClientes = true;
   bool _isSearching = false;
   final _clienteService = ClienteService();
+  final _storageService = StorageService();
   Cliente? _selectedCliente;
   List<UsuarioKluber> _usuariosKluber = [];
+  List<UsuarioKluber> _usuariosKluberFiltrados = [];
   bool _isLoadingUsuarios = true;
   UsuarioKluber? _selectedUsuario;
   Timer? _debounceTimer;
@@ -47,6 +51,9 @@ class _CadastroVisitaScreenState extends State<CadastroVisitaScreen> {
   void dispose() {
     _debounceTimer?.cancel();
     _searchClienteController.dispose();
+    _clienteController.dispose();
+    _contatoClienteController.dispose();
+    _contatoKluberController.dispose();
     // Não parar o timer aqui pois ele deve continuar rodando em background
     // _clienteService.stopAutoUpdate(); // Somente se necessário
     super.dispose();
@@ -111,11 +118,14 @@ class _CadastroVisitaScreenState extends State<CadastroVisitaScreen> {
 
   // Função para formatar a data da última atualização
   String _formatarUltimaAtualizacao() {
-    if (_ultimaAtualizacao == null) return 'Nunca atualizado';
-    
+    if (_ultimaAtualizacao == null) {
+      if (_clientes.isNotEmpty) return 'Cache local (${_clientes.length})';
+      return 'Nunca atualizado';
+    }
+
     final agora = DateTime.now();
     final diferenca = agora.difference(_ultimaAtualizacao!);
-    
+
     if (diferenca.inMinutes < 1) {
       return 'Atualizado agora';
     } else if (diferenca.inMinutes < 60) {
@@ -197,12 +207,53 @@ class _CadastroVisitaScreenState extends State<CadastroVisitaScreen> {
     }
   }
 
+
+  Future<void> _abrirSeletorCliente() async {
+    final selecionado = await ClientePickerSheet.show(
+      context,
+      clientesIniciais: _clientes,
+      ultimaAtualizacao: _ultimaAtualizacao,
+    );
+    if (selecionado == null || !mounted) return;
+    setState(() {
+      _selectedCliente = selecionado;
+      _clienteController.text = selecionado.codigoCliente;
+    });
+    await _carregarClientes();
+  }
+
   Future<void> _carregarUsuarios() async {
     try {
       final usuarios = await _clienteService.getUsuariosKluber();
+      final nomeLogado = await _storageService.getUserName();
+      UsuarioKluber? usuarioLogado;
+
+      if (nomeLogado != null && nomeLogado.trim().isNotEmpty) {
+        final nomeLower = nomeLogado.trim().toLowerCase();
+        try {
+          usuarioLogado = usuarios.firstWhere(
+            (u) =>
+                u.nomeUsuario.toLowerCase() == nomeLower ||
+                u.nomeUsuarioCompleto.toLowerCase() == nomeLower,
+          );
+        } catch (_) {
+          usuarioLogado = null;
+        }
+      }
+
+      if (!mounted) return;
       setState(() {
         _usuariosKluber = usuarios;
+        _usuariosKluberFiltrados = usuarios;
         _isLoadingUsuarios = false;
+        if (usuarioLogado != null) {
+          _selectedUsuario = usuarioLogado;
+          _contatoKluberController.text = usuarioLogado.nomeUsuarioCompleto;
+        } else if (nomeLogado != null &&
+            nomeLogado.trim().isNotEmpty &&
+            _contatoKluberController.text.isEmpty) {
+          _contatoKluberController.text = nomeLogado.trim();
+        }
       });
     } catch (e) {
       setState(() {
@@ -217,11 +268,18 @@ class _CadastroVisitaScreenState extends State<CadastroVisitaScreen> {
   }
 
   Future<void> _selectDate(BuildContext context) async {
+    final now = DateTime.now();
+    final firstDate = DateTime(2024);
+    final lastDate = DateTime(now.year + 5, 12, 31);
+    var initialDate = _dataVisita;
+    if (initialDate.isBefore(firstDate)) initialDate = firstDate;
+    if (initialDate.isAfter(lastDate)) initialDate = lastDate;
+
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _dataVisita,
-      firstDate: DateTime(2024),
-      lastDate: DateTime(2025, 12, 31),
+      initialDate: initialDate,
+      firstDate: firstDate,
+      lastDate: lastDate,
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -243,6 +301,135 @@ class _CadastroVisitaScreenState extends State<CadastroVisitaScreen> {
         _dataVisita = picked;
       });
     }
+  }
+
+  void _abrirSeletorContatoKluber() {
+    _usuariosKluberFiltrados = List.from(_usuariosKluber);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.7,
+            decoration: BoxDecoration(
+              color: Colors.grey[900],
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[850],
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(20),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Selecionar Contato Kluber',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => Navigator.pop(context),
+                            icon: const Icon(
+                              Icons.close,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: 'Buscar usuário...',
+                          hintStyle: TextStyle(color: Colors.grey[400]),
+                          prefixIcon: const Icon(
+                            Icons.search,
+                            color: Color(0xFFFABA00),
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[800],
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        onChanged: (value) {
+                          setModalState(() {
+                            final query = value.toLowerCase();
+                            _usuariosKluberFiltrados = _usuariosKluber
+                                .where((usuario) {
+                              return usuario.nomeUsuarioCompleto
+                                      .toLowerCase()
+                                      .contains(query) ||
+                                  usuario.nomeUsuario
+                                      .toLowerCase()
+                                      .contains(query);
+                            }).toList();
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: _isLoadingUsuarios
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            color: Color(0xFFFABA00),
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: _usuariosKluberFiltrados.length,
+                          itemBuilder: (context, index) {
+                            final usuario = _usuariosKluberFiltrados[index];
+                            return ListTile(
+                              title: Text(
+                                usuario.nomeUsuarioCompleto,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              subtitle: Text(
+                                'Usuário: ${usuario.nomeUsuario}',
+                                style: TextStyle(
+                                  color: Colors.grey[400],
+                                  fontSize: 14,
+                                ),
+                              ),
+                              onTap: () {
+                                setState(() {
+                                  _selectedUsuario = usuario;
+                                  _contatoKluberController.text =
+                                      usuario.nomeUsuarioCompleto;
+                                });
+                                Navigator.pop(context);
+                              },
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
   }
 
   void _salvarVisita() async {
@@ -349,459 +536,7 @@ class _CadastroVisitaScreenState extends State<CadastroVisitaScreen> {
                 const SizedBox(height: 16),
                                  // Campo de Cliente com SearchableDropdown
                  InkWell(
-                   onTap: () {
-                     // Resetar estado da busca ao abrir o modal
-                     _clearSearch();
-                     
-                     showModalBottomSheet(
-                      context: context,
-                      backgroundColor: Colors.transparent,
-                      isScrollControlled: true,
-                      builder: (context) => Container(
-                        height: MediaQuery.of(context).size.height * 0.7,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[900],
-                          borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(20),
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.grey[850],
-                                borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(20),
-                                ),
-                              ),
-                              child: Column(
-                                children: [
-                                                                     Row(
-                                     mainAxisAlignment:
-                                         MainAxisAlignment.spaceBetween,
-                                     children: [
-                                       Column(
-                                         crossAxisAlignment: CrossAxisAlignment.start,
-                                         children: [
-                                           const Text(
-                                             'Selecionar Cliente',
-                                             style: TextStyle(
-                                               color: Colors.white,
-                                               fontSize: 20,
-                                               fontWeight: FontWeight.bold,
-                                             ),
-                                           ),
-                                           const SizedBox(height: 4),
-                                           Row(
-                                             children: [
-                                               Icon(
-                                                 Icons.sync,
-                                                 size: 14,
-                                                 color: Colors.grey[400],
-                                               ),
-                                               const SizedBox(width: 4),
-                                               Text(
-                                                 _formatarUltimaAtualizacao(),
-                                                 style: TextStyle(
-                                                   color: Colors.grey[400],
-                                                   fontSize: 12,
-                                                 ),
-                                               ),
-                                             ],
-                                           ),
-                                                                                   ],
-                                        ),
-                                                                                 Row(
-                                           children: [
-                                             PopupMenuButton<String>(
-                                               icon: const Icon(
-                                                 Icons.more_vert,
-                                                 color: Colors.grey,
-                                               ),
-                                               onSelected: (value) async {
-                                                 if (value == 'refresh') {
-                                                   // Forçar atualização manual
-                                                   setState(() {
-                                                     _isLoadingClientes = true;
-                                                   });
-                                                   
-                                                   await _clienteService.forceUpdate();
-                                                   await _carregarClientes();
-                                                   
-                                                   if (mounted) {
-                                                     ScaffoldMessenger.of(context).showSnackBar(
-                                                       const SnackBar(
-                                                         content: Text('Dados atualizados!'),
-                                                         backgroundColor: Color(0xFFFABA00),
-                                                         duration: Duration(seconds: 2),
-                                                       ),
-                                                     );
-                                                   }
-                                                 } else if (value == 'clear') {
-                                                   // Confirmar antes de limpar cache
-                                                   final confirmar = await showDialog<bool>(
-                                                     context: context,
-                                                     builder: (context) => AlertDialog(
-                                                       backgroundColor: Colors.grey[900],
-                                                       title: const Text(
-                                                         'Limpar Cache',
-                                                         style: TextStyle(color: Colors.white),
-                                                       ),
-                                                       content: const Text(
-                                                         'Isso irá remover todos os dados salvos localmente. Deseja continuar?',
-                                                         style: TextStyle(color: Colors.grey),
-                                                       ),
-                                                       actions: [
-                                                         TextButton(
-                                                           onPressed: () => Navigator.pop(context, false),
-                                                           child: const Text('Cancelar'),
-                                                         ),
-                                                         TextButton(
-                                                           onPressed: () => Navigator.pop(context, true),
-                                                           child: const Text(
-                                                             'Limpar',
-                                                             style: TextStyle(color: Colors.red),
-                                                           ),
-                                                         ),
-                                                       ],
-                                                     ),
-                                                   );
-                                                   
-                                                   if (confirmar == true) {
-                                                     await _clienteService.clearCache();
-                                                     await _carregarClientes();
-                                                     
-                                                     if (mounted) {
-                                                       ScaffoldMessenger.of(context).showSnackBar(
-                                                         const SnackBar(
-                                                           content: Text('Cache limpo com sucesso!'),
-                                                           backgroundColor: Colors.green,
-                                                           duration: Duration(seconds: 2),
-                                                         ),
-                                                       );
-                                                     }
-                                                   }
-                                                 }
-                                               },
-                                               itemBuilder: (context) => [
-                                                 const PopupMenuItem(
-                                                   value: 'refresh',
-                                                   child: Row(
-                                                     children: [
-                                                       Icon(Icons.refresh, color: Color(0xFFFABA00)),
-                                                       SizedBox(width: 8),
-                                                       Text('Atualizar dados'),
-                                                     ],
-                                                   ),
-                                                 ),
-                                                 const PopupMenuItem(
-                                                   value: 'clear',
-                                                   child: Row(
-                                                     children: [
-                                                       Icon(Icons.clear_all, color: Colors.red),
-                                                       SizedBox(width: 8),
-                                                       Text('Limpar cache'),
-                                                     ],
-                                                   ),
-                                                 ),
-                                               ],
-                                             ),
-                                             IconButton(
-                                               onPressed: () => Navigator.pop(context),
-                                               icon: const Icon(
-                                                 Icons.close,
-                                                 color: Colors.white,
-                                               ),
-                                             ),
-                                           ],
-                                         ),
-                                      ],
-                                    ),
-                                   const SizedBox(height: 16),
-                                   TextField(
-                                     controller: _searchClienteController,
-                                    style: const TextStyle(color: Colors.white),
-                                                                         decoration: InputDecoration(
-                                       hintText: 'Busca instantânea por nome, código ou email...',
-                                      hintStyle: TextStyle(color: Colors.grey[400]),
-                                      prefixIcon: _isSearching
-                                          ? const SizedBox(
-                                              width: 20,
-                                              height: 20,
-                                              child: Padding(
-                                                padding: EdgeInsets.all(14),
-                                                child: CircularProgressIndicator(
-                                                  strokeWidth: 2,
-                                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                                    Color(0xFFFABA00),
-                                                  ),
-                                                ),
-                                              ),
-                                            )
-                                          : const Icon(
-                                              Icons.search,
-                                              color: Color(0xFFFABA00),
-                                            ),
-                                                                             suffixIcon: _searchClienteController.text.isNotEmpty
-                                           ? IconButton(
-                                               icon: const Icon(
-                                                 Icons.clear,
-                                                 color: Colors.grey,
-                                               ),
-                                               onPressed: _clearSearch,
-                                             )
-                                           : null,
-                                      filled: true,
-                                      fillColor: Colors.grey[800],
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide.none,
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: const BorderSide(
-                                          color: Color(0xFFFABA00),
-                                          width: 2,
-                                        ),
-                                      ),
-                                    ),
-                                    onChanged: (value) {
-                                      _searchClientes(value);
-                                    },
-                                  ),
-                                                                                                           if (_searchClienteController.text.isNotEmpty)
-                                      Padding(
-                                        padding: const EdgeInsets.only(top: 8),
-                                        child: Column(
-                                          children: [
-                                            Text(
-                                              _isSearching 
-                                                  ? 'Buscando...'
-                                                  : '${_filteredClientes.length} cliente(s) encontrado(s)',
-                                              style: TextStyle(
-                                                color: _isSearching ? const Color(0xFFFABA00) : Colors.grey[400],
-                                                fontSize: 12,
-                                                fontWeight: _isSearching ? FontWeight.bold : FontWeight.normal,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 4),
-                                                                                         Row(
-                                               mainAxisAlignment: MainAxisAlignment.center,
-                                               children: [
-                                                 Icon(
-                                                   _isSearching ? Icons.hourglass_empty : Icons.flash_on,
-                                                   size: 12,
-                                                   color: _isSearching ? const Color(0xFFFABA00) : Colors.grey[500],
-                                                 ),
-                                                 const SizedBox(width: 4),
-                                                 Text(
-                                                   _isSearching 
-                                                       ? 'Processando busca...'
-                                                       : 'Busca local instantânea',
-                                                   style: TextStyle(
-                                                     color: _isSearching ? const Color(0xFFFABA00) : Colors.grey[500],
-                                                     fontSize: 10,
-                                                   ),
-                                                 ),
-                                               ],
-                                             ),
-                                             const SizedBox(height: 4),
-                                             Row(
-                                               mainAxisAlignment: MainAxisAlignment.center,
-                                               children: [
-                                                 Icon(
-                                                   Icons.schedule,
-                                                   size: 10,
-                                                   color: Colors.grey[600],
-                                                 ),
-                                                 const SizedBox(width: 2),
-                                                 Text(
-                                                   'Dados atualizados automaticamente a cada hora',
-                                                   style: TextStyle(
-                                                     color: Colors.grey[600],
-                                                     fontSize: 9,
-                                                   ),
-                                                 ),
-                                               ],
-                                             ),
-                                          ],
-                                        ),
-                                      ),
-                                ],
-                              ),
-                            ),
-                                                         Expanded(
-                               child: _isSearching && _searchClienteController.text.isNotEmpty
-                                   ? Center(
-                                       child: Column(
-                                         mainAxisAlignment: MainAxisAlignment.center,
-                                         children: [
-                                           const CircularProgressIndicator(
-                                             valueColor: AlwaysStoppedAnimation<Color>(
-                                               Color(0xFFFABA00),
-                                             ),
-                                           ),
-                                           const SizedBox(height: 16),
-                                           Text(
-                                             'Buscando clientes...',
-                                             style: TextStyle(
-                                               color: Colors.grey[400],
-                                               fontSize: 16,
-                                             ),
-                                           ),
-                                           const SizedBox(height: 8),
-                                           Row(
-                                             mainAxisAlignment: MainAxisAlignment.center,
-                                             children: [
-                                               Icon(
-                                                 Icons.flash_on,
-                                                 size: 16,
-                                                 color: Colors.grey[500],
-                                               ),
-                                               const SizedBox(width: 4),
-                                               Text(
-                                                 'Busca instantânea ativa',
-                                                 style: TextStyle(
-                                                   color: Colors.grey[500],
-                                                   fontSize: 12,
-                                                 ),
-                                               ),
-                                             ],
-                                           ),
-                                         ],
-                                       ),
-                                     )
-                                   : _filteredClientes.isEmpty && _searchClienteController.text.isNotEmpty && !_isSearching
-                                       ? Center(
-                                           child: Column(
-                                             mainAxisAlignment: MainAxisAlignment.center,
-                                             children: [
-                                               Icon(
-                                                 Icons.search_off,
-                                                 size: 64,
-                                                 color: Colors.grey[600],
-                                               ),
-                                               const SizedBox(height: 16),
-                                               Text(
-                                                 'Nenhum cliente encontrado',
-                                                 style: TextStyle(
-                                                   color: Colors.grey[400],
-                                                   fontSize: 16,
-                                                 ),
-                                               ),
-                                               const SizedBox(height: 8),
-                                               Text(
-                                                 'Tente buscar por nome, código ou email',
-                                                 style: TextStyle(
-                                                   color: Colors.grey[600],
-                                                   fontSize: 14,
-                                                 ),
-                                               ),
-                                               const SizedBox(height: 8),
-                                               Row(
-                                                 mainAxisAlignment: MainAxisAlignment.center,
-                                                 children: [
-                                                   Icon(
-                                                     Icons.search,
-                                                     size: 16,
-                                                     color: Colors.grey[600],
-                                                   ),
-                                                   const SizedBox(width: 4),
-                                                   Text(
-                                                     'Busca local nos dados carregados',
-                                                     style: TextStyle(
-                                                       color: Colors.grey[600],
-                                                       fontSize: 12,
-                                                     ),
-                                                   ),
-                                                 ],
-                                               ),
-                                             ],
-                                           ),
-                                         )
-                                       : ListView.builder(
-                                           itemCount: _filteredClientes.length,
-                                           itemBuilder: (context, index) {
-                                             final cliente = _filteredClientes[index];
-                                             return Card(
-                                               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                                               color: Colors.grey[850],
-                                               shape: RoundedRectangleBorder(
-                                                 borderRadius: BorderRadius.circular(12),
-                                               ),
-                                               child: ListTile(
-                                                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                                 leading: CircleAvatar(
-                                                   backgroundColor: const Color(0xFFFABA00),
-                                                   child: Text(
-                                                     cliente.razaoSocial.isNotEmpty 
-                                                         ? cliente.razaoSocial[0].toUpperCase()
-                                                         : '?',
-                                                     style: const TextStyle(
-                                                       color: Colors.black,
-                                                       fontWeight: FontWeight.bold,
-                                                     ),
-                                                   ),
-                                                 ),
-                                                 title: RichText(
-                                                   text: _buildHighlightedText(
-                                                     cliente.razaoSocial,
-                                                     _searchClienteController.text,
-                                                     const TextStyle(color: Colors.white, fontSize: 16),
-                                                   ),
-                                                 ),
-                                                 subtitle: Column(
-                                                   crossAxisAlignment: CrossAxisAlignment.start,
-                                                   children: [
-                                                     const SizedBox(height: 4),
-                                                     RichText(
-                                                       text: _buildHighlightedText(
-                                                         'Código: ${cliente.codigoCliente}',
-                                                         _searchClienteController.text,
-                                                         TextStyle(color: Colors.grey[400], fontSize: 14),
-                                                       ),
-                                                     ),
-                                                     if (cliente.nomeFantasia.isNotEmpty && cliente.nomeFantasia != cliente.razaoSocial)
-                                                       RichText(
-                                                         text: _buildHighlightedText(
-                                                           cliente.nomeFantasia,
-                                                           _searchClienteController.text,
-                                                           TextStyle(color: Colors.grey[400], fontSize: 12),
-                                                         ),
-                                                       ),
-                                                     if (cliente.email.isNotEmpty)
-                                                       RichText(
-                                                         text: _buildHighlightedText(
-                                                           cliente.email,
-                                                           _searchClienteController.text,
-                                                           TextStyle(color: Colors.grey[500], fontSize: 12),
-                                                         ),
-                                                       ),
-                                                   ],
-                                                 ),
-                                                 trailing: const Icon(
-                                                   Icons.arrow_forward_ios,
-                                                   color: Color(0xFFFABA00),
-                                                   size: 16,
-                                                 ),
-                                                 onTap: () {
-                                                   setState(() {
-                                                     _selectedCliente = cliente;
-                                                     _clienteController.text = cliente.codigoCliente;
-                                                   });
-                                                   Navigator.pop(context);
-                                                 },
-                                               ),
-                                             );
-                                           },
-                                         ),
-                             ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
+                   onTap: _abrirSeletorCliente,
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -856,158 +591,37 @@ class _CadastroVisitaScreenState extends State<CadastroVisitaScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
-                // Campo de Contato Kluber
-                InkWell(
-                  onTap: () {
-                    showModalBottomSheet(
-                      context: context,
-                      backgroundColor: Colors.transparent,
-                      isScrollControlled: true,
-                      builder: (context) => Container(
-                        height: MediaQuery.of(context).size.height * 0.7,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[900],
-                          borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(20),
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.grey[850],
-                                borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(20),
-                                ),
-                              ),
-                              child: Column(
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      const Text(
-                                        'Selecionar Contato Kluber',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      IconButton(
-                                        onPressed: () => Navigator.pop(context),
-                                        icon: const Icon(
-                                          Icons.close,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 16),
-                                  TextField(
-                                    style: const TextStyle(color: Colors.white),
-                                    decoration: InputDecoration(
-                                      hintText: 'Buscar usuário...',
-                                      hintStyle:
-                                          TextStyle(color: Colors.grey[400]),
-                                      prefixIcon: const Icon(
-                                        Icons.search,
-                                        color: Color(0xFFFABA00),
-                                      ),
-                                      filled: true,
-                                      fillColor: Colors.grey[800],
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide.none,
-                                      ),
-                                    ),
-                                    onChanged: (value) {
-                                      setState(() {
-                                        _usuariosKluber =
-                                            _usuariosKluber.where((usuario) {
-                                          return usuario.nomeUsuarioCompleto
-                                              .toLowerCase()
-                                              .contains(value.toLowerCase());
-                                        }).toList();
-                                      });
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Expanded(
-                              child: ListView.builder(
-                                itemCount: _usuariosKluber.length,
-                                itemBuilder: (context, index) {
-                                  final usuario = _usuariosKluber[index];
-                                  return ListTile(
-                                    title: Text(
-                                      usuario.nomeUsuarioCompleto,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    subtitle: Text(
-                                      'Usuário: ${usuario.nomeUsuario}',
-                                      style: TextStyle(
-                                        color: Colors.grey[400],
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                    onTap: () {
-                                      setState(() {
-                                        _selectedUsuario = usuario;
-                                        _contatoKluberController.text =
-                                            usuario.nomeUsuario;
-                                      });
-                                      Navigator.pop(context);
-                                    },
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[900],
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: const Color(0xFFFABA00).withOpacity(0.3),
-                      ),
+                // Campo de Contato Kluber (editável + seleção da lista)
+                TextFormField(
+                  controller: _contatoKluberController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    labelText: 'Contato Kluber',
+                    labelStyle: const TextStyle(color: Colors.grey),
+                    hintText: 'Digite ou selecione o contato',
+                    hintStyle: TextStyle(color: Colors.grey[600]),
+                    prefixIcon: const Icon(
+                      Icons.person_outline,
+                      color: Color(0xFFFABA00),
                     ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.person_outline,
-                          color: Color(0xFFFABA00),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            _selectedUsuario?.nomeUsuarioCompleto ??
-                                'Selecione um contato Kluber',
-                            style: TextStyle(
-                              color: _selectedUsuario != null
-                                  ? Colors.white
-                                  : Colors.grey[600],
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                        const Icon(
-                          Icons.arrow_drop_down,
-                          color: Color(0xFFFABA00),
-                        ),
-                      ],
+                    suffixIcon: IconButton(
+                      icon: const Icon(
+                        Icons.arrow_drop_down,
+                        color: Color(0xFFFABA00),
+                      ),
+                      tooltip: 'Selecionar da lista',
+                      onPressed: _abrirSeletorContatoKluber,
                     ),
                   ),
+                  onChanged: (_) {
+                    _selectedUsuario = null;
+                  },
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Por favor, informe o contato Kluber';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 32),
                 // Botão Salvar

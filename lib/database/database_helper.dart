@@ -589,6 +589,7 @@ class DatabaseHelper {
     }
 
     // Se for Dieffenbacher, criar todos os elementos padrão
+    // Corrente e Bend rods sem posição (superior/inferior)
     if (fabricante == 'Dieffenbacher') {
       final elementosDieffenbacher = [
         // 1. Cinta Superior
@@ -611,27 +612,17 @@ class DatabaseHelper {
           tipo: 'Cinta metálica',
           prensaId: prensaId,
         ),
-        // 3. Corrente Superior
+        // 3. Corrente (sem posição)
         Elemento(
           consumo1: 1.0,
           consumo2: 1.0,
           consumo3: 1.0,
           toma: '2.0',
-          posicao: 'Superior',
+          posicao: 'N/A',
           tipo: 'Corrente',
           prensaId: prensaId,
         ),
-        // 4. Corrente Inferior
-        Elemento(
-          consumo1: 1.0,
-          consumo2: 1.0,
-          consumo3: 1.0,
-          toma: '2.0',
-          posicao: 'Inferior',
-          tipo: 'Corrente',
-          prensaId: prensaId,
-        ),
-        // 5. Bend rods
+        // 4. Bend rods (sem posição)
         Elemento(
           consumo1: 1.0,
           consumo2: 1.0,

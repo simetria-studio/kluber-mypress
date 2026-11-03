@@ -18,4 +18,11 @@ class AplicacaoPrensaHelper {
   static bool permite(String? fabricante, String tipo) {
     return tiposPermitidos(fabricante).contains(tipo);
   }
+
+  /// Dieffenbacher: corrente e bend rods não têm superior/inferior.
+  static bool exigePosicao(String? fabricante, String tipo) {
+    if (tipo == bendRods) return false;
+    if (fabricante == 'Dieffenbacher' && tipo == corrente) return false;
+    return true;
+  }
 }

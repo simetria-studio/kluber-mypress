@@ -1,8 +1,8 @@
 class UnidadeMedidaConstants {
   static const String comprimento = 'm';
-  static const String largura = 'm';
+  static const String largura = 'mm';
   static const String espessura = 'mm';
-  static const String velocidade = 'm/min';
+  static const String velocidade = 'mm/s';
   static const String consumo = 'l/D';
   static const String temperatura = '°C';
 
@@ -23,5 +23,9 @@ class UnidadeMedidaConstants {
         'zona3': temperatura,
         'zona4': temperatura,
         'zona5': temperatura,
+        // Legendas dos gráficos de consumo
+        'consumo1_label': 'Nominal',
+        'toma_label': 'Total',
+        'legendas_consumo': 'Nominal|Total',
       };
 }

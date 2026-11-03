@@ -11,6 +11,8 @@ import '../models/anexo_comentario_model.dart';
 import 'editar_elemento_screen.dart';
 import '../widgets/custom_bottom_nav.dart';
 import 'cadastro_comentario_visita_screen.dart';
+import '../helpers/aplicacao_prensa_helper.dart';
+import '../helpers/number_parse_helper.dart';
 
 class SelecionarElementoScreen extends StatefulWidget {
   final int prensaId;
@@ -32,6 +34,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
   Map<String, String?> _contaminacaoPorTipo = {};
   bool _isLoading = true;
   int _currentIndex = 0;
+  String? _fabricantePrensa;
 
   // Variáveis para Demais Aplicações
   final _formKey = GlobalKey<FormState>();
@@ -97,6 +100,15 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
       final elementos =
           await DatabaseHelper.instance.getElementsByPrensa(widget.prensaId);
 
+      String? fabricante;
+      try {
+        final prensas = await DatabaseHelper.instance.getAllPrensas();
+        fabricante =
+            prensas.firstWhere((p) => p.id == widget.prensaId).fabricante;
+      } catch (_) {
+        fabricante = null;
+      }
+
       // Carregar comentários para cada elemento
       final comentariosPorElemento = <int, List<ComentarioElemento>>{};
       for (var elemento in elementos) {
@@ -125,6 +137,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
       }
 
       setState(() {
+        _fabricantePrensa = fabricante;
         _elementos = elementos;
         _comentariosPorElemento = comentariosPorElemento;
         _consumoOleoPorTipo = {
@@ -483,7 +496,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                                   const SizedBox(width: 8),
                                   const Expanded(
                                     child: Text(
-                                      'Lubrificação dos redutores de acionamento (principal prensa)',
+                                      'Óleo do redutor (principal prensa)',
                                       style: TextStyle(
                                         color: Color(0xFFFABA00),
                                         fontSize: 14,
@@ -494,11 +507,11 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                                 ],
                               ),
                               const SizedBox(height: 12),
-                              // Lubrificante primeiro
+                              // Óleo do redutor
                               DropdownButtonFormField<String>(
                                 value: _lubrificanteSelecionado,
                                 decoration: const InputDecoration(
-                                  labelText: 'Lubrificante',
+                                  labelText: 'Óleo / lubrificante',
                                   labelStyle: TextStyle(color: Color(0xFFFABA00)),
                                   border: OutlineInputBorder(),
                                   enabledBorder: OutlineInputBorder(
@@ -885,12 +898,25 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
 
   Widget _buildElementoRow(Elemento elemento) {
     final comentarios = _comentariosPorElemento[elemento.id] ?? [];
+    final exigePosicao = AplicacaoPrensaHelper.exigePosicao(
+      _fabricantePrensa,
+      elemento.tipo,
+    );
 
-    final descricao = StringBuffer('Posição · ${elemento.posicao}');
+    final descricao = StringBuffer();
+    if (exigePosicao &&
+        elemento.posicao.isNotEmpty &&
+        elemento.posicao != 'N/A') {
+      descricao.write('Posição · ${elemento.posicao}');
+    }
     if (comentarios.isNotEmpty) {
+      if (descricao.isNotEmpty) descricao.write(' · ');
       descricao.write(comentarios.length == 1
-          ? ' · 1 comentário'
-          : ' · ${comentarios.length} comentários');
+          ? '1 comentário'
+          : '${comentarios.length} comentários');
+    }
+    if (descricao.isEmpty) {
+      descricao.write('Sem posição');
     }
 
     return Container(
@@ -999,12 +1025,18 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  _buildInfoItem(
-                    icon: Icons.place,
-                    label: 'Posição',
-                    value: elemento.posicao,
-                  ),
-                  const SizedBox(height: 16),
+                  if (AplicacaoPrensaHelper.exigePosicao(
+                        _fabricantePrensa,
+                        elemento.tipo,
+                      ) &&
+                      elemento.posicao != 'N/A') ...[
+                    _buildInfoItem(
+                      icon: Icons.place,
+                      label: 'Posição',
+                      value: elemento.posicao,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   const Divider(color: Colors.grey),
                   const SizedBox(height: 16),
                   Row(
@@ -1012,8 +1044,8 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                     children: [
                       _buildConsumoItem('Nominal', elemento.consumo1),
                       _buildConsumoItem(
-                        'Consumo',
-                        double.tryParse(elemento.toma) ?? 0.0,
+                        'Total',
+                        NumberParseHelper.tryParse(elemento.toma) ?? 0.0,
                       ),
                     ],
                   ),

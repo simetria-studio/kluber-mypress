@@ -5,6 +5,7 @@ import '../database/database_helper.dart';
 import '../helpers/espessura_constants.dart';
 import '../helpers/aplicacao_prensa_helper.dart';
 import '../helpers/campo_info_helper.dart';
+import '../helpers/number_parse_helper.dart';
 import 'selecionar_elemento_screen.dart';
 
 class CadastroPrensaScreen extends StatefulWidget {
@@ -151,23 +152,21 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
           tipoPrensa: _fabricanteSelecionado!,
           fabricante: _fabricanteSelecionado!,
           comprimento: _comprimentoController.text.isNotEmpty
-              ? double.parse(_comprimentoController.text)
+              ? NumberParseHelper.parse(_comprimentoController.text)
               : null,
-          espressura: double.parse(_espessuraSelecionada!),
+          espressura: NumberParseHelper.parse(_espessuraSelecionada!),
           largura: _larguraController.text.isNotEmpty
-              ? double.parse(_larguraController.text)
+              ? NumberParseHelper.parse(_larguraController.text)
               : null,
           produto: _produtoSelecionado!,
-          velocidade: double.parse(_velocidadeController.text),
+          velocidade: NumberParseHelper.parse(_velocidadeController.text),
           produtoCinta: _produtoCintaSelecionado!,
           produtoCorrente:
               _permiteCorrente ? _produtoCorrenteSelecionado! : 'N/A',
           produtoBendroads:
               _permiteBendRods ? _produtoBendroadsSelecionado! : 'N/A',
           torque: null,
-          comentario: _comentarioController.text.isNotEmpty
-              ? _comentarioController.text
-              : null,
+          comentario: null,
         );
 
         if (widget.prensa != null) {
@@ -295,7 +294,7 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
                   controller: _comprimentoController,
                   style: const TextStyle(color: Colors.white),
                   decoration: const InputDecoration(
-                    labelText: 'Comprimento - m',
+                    labelText: 'Comprimento da prensa - m',
                     labelStyle: TextStyle(color: Colors.white),
                     prefixIcon:
                         Icon(Icons.straighten, color: Color(0xFFFABA00)),
@@ -308,18 +307,19 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
                     ),
                     border: UnderlineInputBorder(),
                   ),
-                  keyboardType: TextInputType.number,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _larguraController,
                   style: const TextStyle(color: Colors.white),
                   decoration: const InputDecoration(
-                    labelText: 'Largura - m',
+                    labelText: 'Largura da chapa - mm',
                     labelStyle: TextStyle(color: Colors.white),
                     prefixIcon:
                         Icon(Icons.swap_horiz, color: Color(0xFFFABA00)),
-                    suffixText: 'm',
+                    suffixText: 'mm',
                     enabledBorder: UnderlineInputBorder(
                       borderSide: BorderSide(color: Colors.grey),
                     ),
@@ -328,7 +328,8 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
                     ),
                     border: UnderlineInputBorder(),
                   ),
-                  keyboardType: TextInputType.number,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
@@ -371,7 +372,7 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
                 DropdownButtonFormField<String>(
                   value: _espessuraSelecionada,
                   decoration: const InputDecoration(
-                    labelText: 'Espessura - mm',
+                    labelText: 'Espessura da chapa - mm',
                     labelStyle: TextStyle(color: Colors.white),
                     prefixIcon: Icon(Icons.height, color: Color(0xFFFABA00)),
                     enabledBorder: UnderlineInputBorder(
@@ -409,10 +410,10 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
                   controller: _velocidadeController,
                   style: const TextStyle(color: Colors.white),
                   decoration: const InputDecoration(
-                    labelText: 'Velocidade - m/min',
+                    labelText: 'Velocidade - mm/s',
                     labelStyle: TextStyle(color: Colors.white),
                     prefixIcon: Icon(Icons.speed, color: Color(0xFFFABA00)),
-                    suffixText: 'm/min',
+                    suffixText: 'mm/s',
                     enabledBorder: UnderlineInputBorder(
                       borderSide: BorderSide(color: Colors.grey),
                     ),
@@ -421,9 +422,12 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
                     ),
                     border: UnderlineInputBorder(),
                   ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) =>
-                      value?.isEmpty ?? true ? 'Campo obrigatório' : null,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  validator: (value) => NumberParseHelper.validateRequired(
+                    value,
+                    field: 'velocidade',
+                  ),
                 ),
                 const SizedBox(height: 16),
 

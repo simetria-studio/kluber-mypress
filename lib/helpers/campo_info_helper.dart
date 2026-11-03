@@ -16,7 +16,8 @@ class CampoInfoHelper {
       'Informe o produto específico usado nessa aplicação.';
 
   static const String dadosPrensa =
-      'Informe fabricante, dimensões, espessura e velocidade. '
+      'Informe fabricante, comprimento da prensa (m), '
+      'largura e espessura da chapa (mm) e velocidade (mm/s). '
       'Esses dados alimentam o reporte técnico da visita.';
 
   static void mostrar(BuildContext context, String titulo, String mensagem) {

@@ -22,17 +22,27 @@ class ClienteService {
   
   Timer? _autoUpdateTimer;
 
-  Future<List<Cliente>> getClientes() async {
-    // Inicializar timer de atualização automática na primeira chamada
+  /// Retorna o cache imediatamente (quando existir) e atualiza em background.
+  /// Use [forceRefresh] no menu "Atualizar" para priorizar o servidor.
+  Future<List<Cliente>> getClientes({bool forceRefresh = false}) async {
     _initAutoUpdate();
+
+    final cache = await _getClientesCache();
+
+    if (!forceRefresh && cache.isNotEmpty) {
+      print('📱 Exibindo ${cache.length} clientes do cache (refresh em background)');
+      // Não bloqueia a UI esperando a API (que pode falhar após ~90s)
+      unawaited(_baixarClientes());
+      return cache;
+    }
 
     final clientes = await _baixarClientes();
     if (clientes != null && clientes.isNotEmpty) {
       return clientes;
     }
 
-    print('📝 Usando cache local');
-    return await _getClientesCache();
+    print('📝 Usando cache local após falha na API');
+    return cache;
   }
 
   /// Baixa os clientes do servidor, retentando quando o corpo da resposta
@@ -46,8 +56,10 @@ class ClienteService {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
             'Accept-Charset': 'utf-8',
+            // API comprime de ~112KB para ~17KB quando gzip é aceito
+            'Accept-Encoding': 'gzip',
           },
-        ).timeout(const Duration(seconds: 30));
+        ).timeout(const Duration(seconds: 15));
 
         if (response.statusCode != 200) {
           print('⚠️ Status ${response.statusCode} ao carregar clientes');
@@ -240,9 +252,9 @@ class ClienteService {
   bool get isAutoUpdateActive => _autoUpdateTimer?.isActive == true;
 
   // Método para forçar atualização manual
-  Future<void> forceUpdate() async {
+  Future<List<Cliente>> forceUpdate() async {
     print('🔄 Forçando atualização manual de clientes...');
-    await _atualizarClientesAutomaticamente();
+    return await getClientes(forceRefresh: true);
   }
 
   // Método para limpar cache em caso de corrupção

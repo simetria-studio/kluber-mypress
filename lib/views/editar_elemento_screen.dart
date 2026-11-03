@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/elemento_model.dart';
 import '../database/database_helper.dart';
 import '../helpers/aplicacao_prensa_helper.dart';
+import '../helpers/number_parse_helper.dart';
 
 class EditarElementoScreen extends StatefulWidget {
   final Elemento elemento;
@@ -96,8 +97,10 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
 
   void _calcularSoma() {
     try {
-      final consumo2 = double.tryParse(_consumo2Controller.text) ?? 0;
-      final consumo3 = double.tryParse(_consumo3Controller.text) ?? 0;
+      final consumo2 =
+          NumberParseHelper.tryParse(_consumo2Controller.text) ?? 0;
+      final consumo3 =
+          NumberParseHelper.tryParse(_consumo3Controller.text) ?? 0;
       final soma = consumo2 + consumo3;
       _tomaController.text = soma.toString();
     } catch (e) {
@@ -123,25 +126,23 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
               'Esta aplicação não é permitida para $_fabricantePrensa');
         }
 
-        if (_tipoElementoSelecionado != 'Bend rods' &&
-            _posicaoSelecionada == null) {
-          throw Exception('Por favor, selecione a posição');
-        }
-
-        // Para Dieffenbacher, sempre exigir posição
-        if (_fabricantePrensa == 'Dieffenbacher' &&
-            _posicaoSelecionada == null) {
+        final exigePosicao = AplicacaoPrensaHelper.exigePosicao(
+          _fabricantePrensa,
+          _tipoElementoSelecionado!,
+        );
+        if (exigePosicao && _posicaoSelecionada == null) {
           throw Exception('Por favor, selecione a posição');
         }
 
         final elementoAtualizado = Elemento(
           id: widget.elemento.id,
-          consumo1: double.parse(_consumo1Controller.text),
-          consumo2: double.parse(_consumo2Controller.text),
-          consumo3: double.parse(_consumo3Controller.text),
-          toma: _tomaController.text,
-          posicao: _posicaoSelecionada ??
-              'N/A', // Usar 'N/A' como valor padrão para Bend rods
+          consumo1: NumberParseHelper.parse(_consumo1Controller.text),
+          consumo2: NumberParseHelper.parse(_consumo2Controller.text),
+          consumo3: NumberParseHelper.parse(_consumo3Controller.text),
+          toma: NumberParseHelper.normalize(_tomaController.text),
+          posicao: exigePosicao
+              ? (_posicaoSelecionada ?? widget.elemento.posicao)
+              : 'N/A',
           tipo: _tipoElementoSelecionado!,
           prensaId: widget.elemento.prensaId,
           consumoOleo: widget.elemento.consumoOleo,
@@ -262,8 +263,10 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
                         ),
                         const SizedBox(height: 16),
                         Visibility(
-                          visible: _tipoElementoSelecionado != 'Bend rods' ||
-                              _fabricantePrensa == 'Dieffenbacher',
+                          visible: AplicacaoPrensaHelper.exigePosicao(
+                            _fabricantePrensa,
+                            _tipoElementoSelecionado ?? '',
+                          ),
                           child: TextFormField(
                             controller: _posicaoController,
                             enabled: false,
@@ -294,13 +297,13 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
                             suffixText: 'l/D',
                           ),
                           style: const TextStyle(color: Colors.white),
-                          keyboardType: TextInputType.number,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Por favor, insira o consumo nominal';
-                            }
-                            return null;
-                          },
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          validator: (value) =>
+                              NumberParseHelper.validateRequired(
+                            value,
+                            field: 'consumo nominal',
+                          ),
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
@@ -320,13 +323,13 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
                             border: UnderlineInputBorder(),
                           ),
                           style: const TextStyle(color: Colors.white),
-                          keyboardType: TextInputType.number,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Por favor, insira o consumo real';
-                            }
-                            return null;
-                          },
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          validator: (value) =>
+                              NumberParseHelper.validateRequired(
+                            value,
+                            field: 'consumo real',
+                          ),
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
@@ -346,13 +349,13 @@ class _EditarElementoScreenState extends State<EditarElementoScreen> {
                             border: UnderlineInputBorder(),
                           ),
                           style: const TextStyle(color: Colors.white),
-                          keyboardType: TextInputType.number,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Por favor, insira o consumo adicional';
-                            }
-                            return null;
-                          },
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          validator: (value) =>
+                              NumberParseHelper.validateRequired(
+                            value,
+                            field: 'consumo adicional',
+                          ),
                         ),
                         const SizedBox(height: 16),
                         TextFormField(

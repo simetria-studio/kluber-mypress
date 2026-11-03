@@ -177,12 +177,35 @@ class _VisitasPendentesScreenState extends State<VisitasPendentesScreen> {
       }),
     );
 
+    final comprimentosVisita = prensas
+        .where((p) => p.comprimento != null)
+        .map((p) => p.comprimento)
+        .toList();
+
+    final visitaMap = Map<String, dynamic>.from(visita.toMap());
+    // Relatório: comprimento (m) nos detalhes da visita
+    visitaMap['comprimento'] =
+        comprimentosVisita.isNotEmpty ? comprimentosVisita.first : null;
+    visitaMap['comprimentos'] = comprimentosVisita;
+
     return {
       'request': {
-        'visita': visita.toMap(),
+        'visita': visitaMap,
         'prensas': prensasFormatadas,
         'problemas': problemas.map((p) => p.toMap()).toList(),
         'unidades': UnidadeMedidaConstants.paraReporte,
+        'relatorio': {
+          'legendas_consumo': {
+            'nominal': 'Nominal',
+            'total': 'Total',
+            'consumo1': 'Nominal',
+            'toma': 'Total',
+          },
+          'bend_rods_apenas_dieffenbacher': true,
+          'layout': {
+            'sem_bend_rods_temperatura_velocidade_lado_a_lado': true,
+          },
+        },
       }
     };
   }

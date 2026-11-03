@@ -5,6 +5,7 @@ import '../database/database_helper.dart';
 import '../helpers/espessura_constants.dart';
 import '../helpers/aplicacao_prensa_helper.dart';
 import '../helpers/campo_info_helper.dart';
+import '../helpers/number_parse_helper.dart';
 import 'selecionar_elemento_screen.dart';
 
 class CadastroPrensaTemperaturaScreen extends StatefulWidget {
@@ -154,23 +155,21 @@ class _CadastroPrensaTemperaturaScreenState
           tipoPrensa: _fabricanteSelecionado!,
           fabricante: _fabricanteSelecionado!,
           comprimento: _comprimentoController.text.isNotEmpty
-              ? double.parse(_comprimentoController.text)
+              ? NumberParseHelper.parse(_comprimentoController.text)
               : null,
-          espressura: double.parse(_espessuraSelecionada!),
+          espressura: NumberParseHelper.parse(_espessuraSelecionada!),
           largura: _larguraController.text.isNotEmpty
-              ? double.parse(_larguraController.text)
+              ? NumberParseHelper.parse(_larguraController.text)
               : null,
           produto: _produtoSelecionado!,
-          velocidade: double.parse(_velocidadeController.text),
+          velocidade: NumberParseHelper.parse(_velocidadeController.text),
           produtoCinta: _produtoCintaSelecionado!,
           produtoCorrente:
               _permiteCorrente ? _produtoCorrenteSelecionado! : 'N/A',
           produtoBendroads:
               _permiteBendRods ? _produtoBendroadsSelecionado! : 'N/A',
           torque: null,
-          comentario: _comentarioController.text.isNotEmpty
-              ? _comentarioController.text
-              : null,
+          comentario: null,
         );
 
         int prensaId;
@@ -187,20 +186,20 @@ class _CadastroPrensaTemperaturaScreenState
             id: widget.temperatura?.id,
             dataRegistro: widget.temperatura?.dataRegistro ??
                 DateTime.now().toIso8601String(),
-            zona1: _zona1Controller.text.isNotEmpty
-                ? double.parse(_zona1Controller.text)
+                zona1: _zona1Controller.text.isNotEmpty
+                ? NumberParseHelper.parse(_zona1Controller.text)
                 : null,
             zona2: _zona2Controller.text.isNotEmpty
-                ? double.parse(_zona2Controller.text)
+                ? NumberParseHelper.parse(_zona2Controller.text)
                 : null,
             zona3: _zona3Controller.text.isNotEmpty
-                ? double.parse(_zona3Controller.text)
+                ? NumberParseHelper.parse(_zona3Controller.text)
                 : null,
             zona4: _zona4Controller.text.isNotEmpty
-                ? double.parse(_zona4Controller.text)
+                ? NumberParseHelper.parse(_zona4Controller.text)
                 : null,
             zona5: _zona5Controller.text.isNotEmpty
-                ? double.parse(_zona5Controller.text)
+                ? NumberParseHelper.parse(_zona5Controller.text)
                 : null,
             prensaId: prensaId,
           );
@@ -222,7 +221,12 @@ class _CadastroPrensaTemperaturaScreenState
             ),
           );
 
-          // Navegar para seleção de elementos
+          if (widget.prensa != null) {
+            Navigator.pop(context, true);
+            return;
+          }
+
+          // Navegar para seleção de elementos (fluxo de novo cadastro)
           await Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -343,13 +347,24 @@ class _CadastroPrensaTemperaturaScreenState
                             child: TextFormField(
                               controller: _comprimentoController,
                               decoration: const InputDecoration(
-                                labelText: 'Comprimento - m',
+                                labelText: 'Comprimento da prensa - m',
                                 labelStyle: TextStyle(color: Colors.white),
                                 prefixIcon: Icon(Icons.straighten,
                                     color: Color(0xFFFABA00)),
+                                suffixText: 'm',
                               ),
                               style: const TextStyle(color: Colors.white),
-                              keyboardType: TextInputType.number,
+                              keyboardType: const TextInputType.numberWithOptions(
+                                  decimal: true),
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return null;
+                                }
+                                return NumberParseHelper.validateRequired(
+                                  value,
+                                  field: 'comprimento',
+                                );
+                              },
                             ),
                           ),
                           const SizedBox(width: 16),
@@ -357,13 +372,24 @@ class _CadastroPrensaTemperaturaScreenState
                             child: TextFormField(
                               controller: _larguraController,
                               decoration: const InputDecoration(
-                                labelText: 'Largura - mm',
+                                labelText: 'Largura da chapa - mm',
                                 labelStyle: TextStyle(color: Colors.white),
                                 prefixIcon: Icon(Icons.straighten,
                                     color: Color(0xFFFABA00)),
+                                suffixText: 'mm',
                               ),
                               style: const TextStyle(color: Colors.white),
-                              keyboardType: TextInputType.number,
+                              keyboardType: const TextInputType.numberWithOptions(
+                                  decimal: true),
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return null;
+                                }
+                                return NumberParseHelper.validateRequired(
+                                  value,
+                                  field: 'largura',
+                                );
+                              },
                             ),
                           ),
                         ],
@@ -374,7 +400,7 @@ class _CadastroPrensaTemperaturaScreenState
                       DropdownButtonFormField<String>(
                         value: _espessuraSelecionada,
                         decoration: const InputDecoration(
-                          labelText: 'Espessura - mm',
+                          labelText: 'Espessura da chapa - mm',
                           labelStyle: TextStyle(color: Colors.white),
                           prefixIcon:
                               Icon(Icons.height, color: Color(0xFFFABA00)),
@@ -437,20 +463,19 @@ class _CadastroPrensaTemperaturaScreenState
                       TextFormField(
                         controller: _velocidadeController,
                         decoration: const InputDecoration(
-                          labelText: 'Velocidade - m/min',
+                          labelText: 'Velocidade - mm/s',
                           labelStyle: TextStyle(color: Colors.white),
                           prefixIcon:
                               Icon(Icons.speed, color: Color(0xFFFABA00)),
-                          suffixText: 'm/min',
+                          suffixText: 'mm/s',
                         ),
                         style: const TextStyle(color: Colors.white),
-                        keyboardType: TextInputType.number,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor, insira a velocidade';
-                          }
-                          return null;
-                        },
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        validator: (value) => NumberParseHelper.validateRequired(
+                          value,
+                          field: 'velocidade',
+                        ),
                       ),
                       const SizedBox(height: 16),
 
