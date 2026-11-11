@@ -3,6 +3,7 @@ import 'package:mypress/views/cadastro_visita_screen.dart';
 import '../models/elemento_model.dart';
 import '../models/comentario_elemento_model.dart';
 import '../models/problema_model.dart';
+import '../models/prensa_model.dart';
 import '../database/database_helper.dart';
 import 'dart:convert';
 import 'dart:io';
@@ -15,6 +16,7 @@ import 'editar_elemento_screen.dart';
 import '../widgets/custom_bottom_nav.dart';
 import 'cadastro_comentario_visita_screen.dart';
 import '../helpers/aplicacao_prensa_helper.dart';
+import '../helpers/campo_info_helper.dart';
 import '../helpers/lubrificante_produto_helper.dart';
 import '../helpers/number_parse_helper.dart';
 import '../helpers/unidade_medida_constants.dart';
@@ -40,6 +42,19 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
   bool _isLoading = true;
   int _currentIndex = 0;
   String? _fabricantePrensa;
+  Prensa? _prensa;
+
+  // Lubrificantes (produtos da aplicação)
+  String? _produtoCintaSelecionado;
+  String? _produtoCorrenteSelecionado;
+  String? _produtoBendroadsSelecionado;
+  bool _isSavingProdutos = false;
+
+  bool get _permiteCorrente => AplicacaoPrensaHelper.permite(
+      _fabricantePrensa, AplicacaoPrensaHelper.corrente);
+
+  bool get _permiteBendRods => AplicacaoPrensaHelper.permite(
+      _fabricantePrensa, AplicacaoPrensaHelper.bendRods);
 
   // Variáveis para Demais Aplicações
   final _formKey = GlobalKey<FormState>();
@@ -105,12 +120,14 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
       final elementos =
           await DatabaseHelper.instance.getElementsByPrensa(widget.prensaId);
 
+      Prensa? prensa;
       String? fabricante;
       try {
         final prensas = await DatabaseHelper.instance.getAllPrensas();
-        fabricante =
-            prensas.firstWhere((p) => p.id == widget.prensaId).fabricante;
+        prensa = prensas.firstWhere((p) => p.id == widget.prensaId);
+        fabricante = prensa.fabricante;
       } catch (_) {
+        prensa = null;
         fabricante = null;
       }
 
@@ -161,7 +178,20 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
       }
 
       setState(() {
+        _prensa = prensa;
         _fabricantePrensa = fabricante;
+        _produtoCintaSelecionado = LubrificanteProdutoHelper.valorNaLista(
+          prensa?.produtoCinta,
+          LubrificanteProdutoHelper.produtosCinta,
+        );
+        _produtoCorrenteSelecionado = LubrificanteProdutoHelper.valorNaLista(
+          prensa?.produtoCorrente,
+          LubrificanteProdutoHelper.produtosCorrente,
+        );
+        _produtoBendroadsSelecionado = LubrificanteProdutoHelper.valorNaLista(
+          prensa?.produtoBendroads,
+          LubrificanteProdutoHelper.produtosBendRods,
+        );
         _elementos = elementos;
         _comentariosPorElemento = comentariosPorElemento;
         _consumoOleoPorTipo = {
@@ -464,6 +494,199 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
     );
   }
 
+  Widget _buildSectionHeader(
+    String title,
+    IconData icon, {
+    String? infoMensagem,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFABA00).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: const Color(0xFFFABA00).withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: const Color(0xFFFABA00), size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                color: Color(0xFFFABA00),
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          if (infoMensagem != null)
+            CampoInfoHelper.botao(
+              context,
+              titulo: title,
+              mensagem: infoMensagem,
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLubrificantesSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader(
+          'Lubrificantes',
+          Icons.opacity,
+          infoMensagem: CampoInfoHelper.lubrificantes,
+        ),
+        const SizedBox(height: 16),
+        DropdownButtonFormField<String>(
+          value: _produtoCintaSelecionado,
+          decoration: const InputDecoration(
+            labelText: 'Produto Cinta',
+            labelStyle: TextStyle(color: Colors.white),
+            prefixIcon: Icon(Icons.opacity, color: Color(0xFFFABA00)),
+          ),
+          dropdownColor: Colors.grey[900],
+          style: const TextStyle(color: Colors.white),
+          items: LubrificanteProdutoHelper.produtosCinta.map((String produto) {
+            return DropdownMenuItem<String>(
+              value: produto,
+              child: Text(produto),
+            );
+          }).toList(),
+          onChanged: (String? newValue) {
+            setState(() {
+              _produtoCintaSelecionado = newValue;
+            });
+            _salvarLubrificantes();
+          },
+        ),
+        if (_permiteCorrente) ...[
+          const SizedBox(height: 16),
+          DropdownButtonFormField<String>(
+            value: _produtoCorrenteSelecionado,
+            decoration: const InputDecoration(
+              labelText: 'Produto Corrente',
+              labelStyle: TextStyle(color: Colors.white),
+              prefixIcon: Icon(Icons.opacity, color: Color(0xFFFABA00)),
+            ),
+            dropdownColor: Colors.grey[900],
+            style: const TextStyle(color: Colors.white),
+            items: LubrificanteProdutoHelper.produtosCorrente
+                .map((String produto) {
+              return DropdownMenuItem<String>(
+                value: produto,
+                child: Text(produto),
+              );
+            }).toList(),
+            onChanged: (String? newValue) {
+              setState(() {
+                _produtoCorrenteSelecionado = newValue;
+              });
+              _salvarLubrificantes();
+            },
+          ),
+        ],
+        if (_permiteBendRods) ...[
+          const SizedBox(height: 16),
+          DropdownButtonFormField<String>(
+            value: _produtoBendroadsSelecionado,
+            decoration: InputDecoration(
+              labelText: 'Produto Bend Rods',
+              labelStyle: const TextStyle(color: Colors.white),
+              prefixIcon: const Icon(Icons.opacity, color: Color(0xFFFABA00)),
+              suffixIcon: CampoInfoHelper.botao(
+                context,
+                titulo: 'Bend rods',
+                mensagem: CampoInfoHelper.bendRods,
+              ),
+            ),
+            dropdownColor: Colors.grey[900],
+            style: const TextStyle(color: Colors.white),
+            items: LubrificanteProdutoHelper.produtosBendRods
+                .map((String produto) {
+              return DropdownMenuItem<String>(
+                value: produto,
+                child: Text(produto),
+              );
+            }).toList(),
+            onChanged: (String? newValue) {
+              setState(() {
+                _produtoBendroadsSelecionado = newValue;
+              });
+              _salvarLubrificantes();
+            },
+          ),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _salvarLubrificantes() async {
+    if (_prensa == null || _isSavingProdutos) return;
+    if (_produtoCintaSelecionado == null || _produtoCintaSelecionado!.isEmpty) {
+      return;
+    }
+    if (_permiteCorrente &&
+        (_produtoCorrenteSelecionado == null ||
+            _produtoCorrenteSelecionado!.isEmpty)) {
+      return;
+    }
+    if (_permiteBendRods &&
+        (_produtoBendroadsSelecionado == null ||
+            _produtoBendroadsSelecionado!.isEmpty)) {
+      return;
+    }
+
+    setState(() {
+      _isSavingProdutos = true;
+    });
+
+    try {
+      final atualizada = Prensa(
+        id: _prensa!.id,
+        visitaId: _prensa!.visitaId,
+        tipoPrensa: _prensa!.tipoPrensa,
+        fabricante: _prensa!.fabricante,
+        comprimento: _prensa!.comprimento,
+        espressura: _prensa!.espressura,
+        largura: _prensa!.largura,
+        produto: _prensa!.produto,
+        velocidade: _prensa!.velocidade,
+        produtoCinta: _produtoCintaSelecionado!,
+        produtoCorrente:
+            _permiteCorrente ? _produtoCorrenteSelecionado! : 'N/A',
+        produtoBendroads:
+            _permiteBendRods ? _produtoBendroadsSelecionado! : 'N/A',
+        torque: _prensa!.torque,
+        comentario: _prensa!.comentario,
+      );
+
+      await DatabaseHelper.instance.updatePrensa(atualizada);
+      _prensa = atualizada;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao salvar lubrificantes: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSavingProdutos = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -484,6 +707,9 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  _buildLubrificantesSection(),
+                  const SizedBox(height: 24),
+
                   if (_elementos.where(_isElementoMonitorado).isNotEmpty) ...[
                     const Text(
                       'Aplicações da prensa',
