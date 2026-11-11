@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as p;
 import 'dart:convert';
 import 'dart:io';
 import '../models/anexo_comentario_model.dart';
@@ -19,10 +20,8 @@ class CadastroAnexoScreen extends StatefulWidget {
 }
 
 class _CadastroAnexoScreenState extends State<CadastroAnexoScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _nomeController = TextEditingController();
-  String? _imageBase64;
   File? _imageFile;
+  String? _nomeArquivo;
   bool _isLoading = false;
 
   Future<void> _tirarFoto() async {
@@ -86,8 +85,12 @@ class _CadastroAnexoScreenState extends State<CadastroAnexoScreen> {
         );
 
         if (compressedFile != null) {
+          final originalName = p.basename(imageFile.path);
           setState(() {
-            _imageFile = File(compressedFile.path); // Converte para File
+            _imageFile = File(compressedFile.path);
+            _nomeArquivo = originalName.contains('.')
+                ? '${p.basenameWithoutExtension(originalName)}.jpg'
+                : '$originalName.jpg';
           });
         }
       } catch (e) {
@@ -104,7 +107,7 @@ class _CadastroAnexoScreenState extends State<CadastroAnexoScreen> {
   }
 
   Future<void> _salvarAnexo() async {
-    if (_formKey.currentState!.validate() && _imageFile != null) {
+    if (_imageFile != null) {
       try {
         setState(() {
           _isLoading = true;
@@ -117,7 +120,7 @@ class _CadastroAnexoScreenState extends State<CadastroAnexoScreen> {
         final mimeType = 'image/$extension';
 
         final anexo = AnexoComentario(
-          nome: _nomeController.text,
+          nome: _nomeArquivo ?? p.basename(_imageFile!.path),
           tipo: mimeType,
           url: _imageFile!.path,
           base64: base64Image,
@@ -169,34 +172,27 @@ class _CadastroAnexoScreenState extends State<CadastroAnexoScreen> {
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
+          child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TextFormField(
-                  controller: _nomeController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    labelText: 'Nome do Anexo',
-                    labelStyle: TextStyle(color: Colors.grey[400]),
-                    prefixIcon: const Icon(
-                      Icons.attachment,
-                      color: Color(0xFFFABA00),
+                if (_imageFile != null) ...[
+                  if (_nomeArquivo != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.attachment,
+                              color: Color(0xFFFABA00), size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _nomeArquivo!,
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value?.isEmpty ?? true) {
-                      return 'Por favor, insira um nome para o anexo';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                if (_imageFile != null)
                   Container(
                     width: double.infinity,
                     height: 200,
@@ -208,14 +204,17 @@ class _CadastroAnexoScreenState extends State<CadastroAnexoScreen> {
                       ),
                     ),
                   ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 16),
+                ],
                 SizedBox(
                   width: double.infinity,
                   height: 55,
                   child: ElevatedButton.icon(
                     onPressed: _tirarFoto,
                     icon: const Icon(Icons.camera_alt),
-                    label: const Text('TIRAR FOTO'),
+                    label: Text(
+                      _imageFile == null ? 'SELECIONAR ARQUIVO' : 'TROCAR ARQUIVO',
+                    ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.grey[900],
                       shape: RoundedRectangleBorder(
@@ -258,7 +257,6 @@ class _CadastroAnexoScreenState extends State<CadastroAnexoScreen> {
                   ),
                 ),
               ],
-            ),
           ),
         ),
       ),
@@ -267,7 +265,6 @@ class _CadastroAnexoScreenState extends State<CadastroAnexoScreen> {
 
   @override
   void dispose() {
-    _nomeController.dispose();
     super.dispose();
   }
 }

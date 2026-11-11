@@ -239,7 +239,7 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Consumo Nominal',
                     prefixIcon: Icon(Icons.speed, color: Color(0xFFFABA00)),
-                    suffixText: 'l/D',
+                    suffixText: 'L/dia',
                   ),
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
@@ -255,7 +255,7 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Consumo Real',
                     prefixIcon: Icon(Icons.speed, color: Color(0xFFFABA00)),
-                    suffixText: 'l/D',
+                    suffixText: 'L/dia',
                   ),
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
@@ -271,7 +271,7 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Consumo adicional',
                     prefixIcon: Icon(Icons.speed, color: Color(0xFFFABA00)),
-                    suffixText: 'l/D',
+                    suffixText: 'L/dia',
                   ),
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
@@ -288,7 +288,7 @@ class _CadastroElementoScreenState extends State<CadastroElementoScreen> {
                     labelText: 'Soma',
                     prefixIcon: Icon(Icons.settings_input_component,
                         color: Color(0xFFFABA00)),
-                    suffixText: 'l/D',
+                    suffixText: 'L/dia',
                   ),
                   enabled: false,
                   validator: (value) =>

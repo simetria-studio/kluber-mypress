@@ -849,6 +849,43 @@ class DatabaseHelper {
     );
   }
 
+  Future<int> deleteComentarioElemento(int comentarioId) async {
+    final db = await instance.database;
+    await db.delete(
+      'anexos_comentarios',
+      where: 'mypress_comentario_id = ?',
+      whereArgs: [comentarioId],
+    );
+    return await db.delete(
+      'comentarios_elementos',
+      where: 'id = ?',
+      whereArgs: [comentarioId],
+    );
+  }
+
+  /// Remove o anexo e, se o comentário era só placeholder de foto, apaga o comentário também.
+  Future<void> deleteAnexoEComentarioSeVazio(AnexoComentario anexo) async {
+    final comentarioId = anexo.comentarioId;
+    await deleteAnexoComentario(anexo.id!);
+
+    final restantes = await getAnexosByComentario(comentarioId);
+    if (restantes.isNotEmpty) return;
+
+    final db = await instance.database;
+    final maps = await db.query(
+      'comentarios_elementos',
+      where: 'id = ?',
+      whereArgs: [comentarioId],
+      limit: 1,
+    );
+    if (maps.isEmpty) return;
+
+    final texto = (maps.first['comentario'] as String? ?? '').trim();
+    if (texto.isEmpty || texto.toLowerCase() == 'foto') {
+      await deleteComentarioElemento(comentarioId);
+    }
+  }
+
   Future<int> updateElemento(Elemento elemento) async {
     final db = await instance.database;
     return await db.update(

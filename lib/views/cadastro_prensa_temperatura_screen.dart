@@ -3,7 +3,6 @@ import '../models/prensa_model.dart';
 import '../models/temperatura_prensa_model.dart';
 import '../database/database_helper.dart';
 import '../helpers/espessura_constants.dart';
-import '../helpers/aplicacao_prensa_helper.dart';
 import '../helpers/campo_info_helper.dart';
 import '../helpers/number_parse_helper.dart';
 import 'selecionar_elemento_screen.dart';
@@ -35,9 +34,6 @@ class _CadastroPrensaTemperaturaScreenState
   final _larguraController = TextEditingController();
   final _produtoController = TextEditingController();
   final _velocidadeController = TextEditingController();
-  final _produtoCintaController = TextEditingController();
-  final _produtoCorrenteController = TextEditingController();
-  final _produtoBendroadsController = TextEditingController();
 
   // Controllers para Temperatura
   final _zona1Controller = TextEditingController();
@@ -71,41 +67,7 @@ class _CadastroPrensaTemperaturaScreenState
   ];
   String? _produtoSelecionado;
 
-  final List<String> _tiposProdutosCinta = [
-    'Hotemp Super N',
-    'Hotemp Super N Plus',
-    'Klubersynh CP 2-260',
-    'Outro',
-    'N/A'
-  ];
-  String? _produtoCintaSelecionado;
-
-  final List<String> _tiposProdutosCorrente = [
-    'Hotemp Super CH 2-100',
-    'Klubersynh CP 2-100',
-    'Hotemp Super N',
-    'Hotemp Super N Plus',
-    'Klubersynh CP 2-260',
-    'Outro',
-    'N/A'
-  ];
-  String? _produtoCorrenteSelecionado;
-
-  final List<String> _tiposProdutosBendroads = [
-    'Hotemp Super CH 2-100',
-    'Klubersynh CP 2-100',
-    'Outro',
-    'N/A'
-  ];
-  String? _produtoBendroadsSelecionado;
-
   String? _espessuraSelecionada;
-
-  bool get _permiteCorrente => AplicacaoPrensaHelper.permite(
-      _fabricanteSelecionado, AplicacaoPrensaHelper.corrente);
-
-  bool get _permiteBendRods => AplicacaoPrensaHelper.permite(
-      _fabricanteSelecionado, AplicacaoPrensaHelper.bendRods);
 
   bool _isLoading = false;
   bool _showTemperaturaSection = true;
@@ -126,9 +88,6 @@ class _CadastroPrensaTemperaturaScreenState
       _larguraController.text = widget.prensa!.largura?.toString() ?? '';
       _produtoSelecionado = widget.prensa!.produto;
       _velocidadeController.text = widget.prensa!.velocidade.toString();
-      _produtoCintaSelecionado = widget.prensa!.produtoCinta;
-      _produtoCorrenteSelecionado = widget.prensa!.produtoCorrente;
-      _produtoBendroadsSelecionado = widget.prensa!.produtoBendroads;
       _comentarioController.text = widget.prensa!.comentario ?? '';
     }
 
@@ -148,6 +107,21 @@ class _CadastroPrensaTemperaturaScreenState
       });
 
       try {
+        // Preserva produtos de lubrificação já salvos em Selecionar Elementos
+        String produtoCinta = 'N/A';
+        String produtoCorrente = 'N/A';
+        String produtoBendroads = 'N/A';
+        if (widget.prensa?.id != null) {
+          final prensas = await DatabaseHelper.instance.getAllPrensas();
+          final atuais =
+              prensas.where((p) => p.id == widget.prensa!.id).toList();
+          if (atuais.isNotEmpty) {
+            produtoCinta = atuais.first.produtoCinta;
+            produtoCorrente = atuais.first.produtoCorrente;
+            produtoBendroads = atuais.first.produtoBendroads;
+          }
+        }
+
         // Salvar Prensa
         final prensa = Prensa(
           id: widget.prensa?.id,
@@ -163,11 +137,9 @@ class _CadastroPrensaTemperaturaScreenState
               : null,
           produto: _produtoSelecionado!,
           velocidade: NumberParseHelper.parse(_velocidadeController.text),
-          produtoCinta: _produtoCintaSelecionado!,
-          produtoCorrente:
-              _permiteCorrente ? _produtoCorrenteSelecionado! : 'N/A',
-          produtoBendroads:
-              _permiteBendRods ? _produtoBendroadsSelecionado! : 'N/A',
+          produtoCinta: produtoCinta,
+          produtoCorrente: produtoCorrente,
+          produtoBendroads: produtoBendroads,
           torque: null,
           comentario: null,
         );
@@ -295,15 +267,13 @@ class _CadastroPrensaTemperaturaScreenState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Seção da Prensa
+                      // Dados da Prensa: Fabricante, Comprimento, Velocidade
                       _buildSectionHeader(
                         'Dados da Prensa',
                         Icons.settings,
                         infoMensagem: CampoInfoHelper.dadosPrensa,
                       ),
                       const SizedBox(height: 16),
-
-                      // Fabricante
                       DropdownButtonFormField<String>(
                         value: _fabricanteSelecionado,
                         decoration: const InputDecoration(
@@ -323,12 +293,6 @@ class _CadastroPrensaTemperaturaScreenState
                         onChanged: (String? newValue) {
                           setState(() {
                             _fabricanteSelecionado = newValue;
-                            if (!_permiteCorrente) {
-                              _produtoCorrenteSelecionado = 'N/A';
-                            }
-                            if (!_permiteBendRods) {
-                              _produtoBendroadsSelecionado = 'N/A';
-                            }
                           });
                         },
                         validator: (value) {
@@ -339,96 +303,55 @@ class _CadastroPrensaTemperaturaScreenState
                         },
                       ),
                       const SizedBox(height: 16),
-
-                      // Dimensões
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _comprimentoController,
-                              decoration: const InputDecoration(
-                                labelText: 'Comprimento da prensa - m',
-                                labelStyle: TextStyle(color: Colors.white),
-                                prefixIcon: Icon(Icons.straighten,
-                                    color: Color(0xFFFABA00)),
-                                suffixText: 'm',
-                              ),
-                              style: const TextStyle(color: Colors.white),
-                              keyboardType: const TextInputType.numberWithOptions(
-                                  decimal: true),
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return null;
-                                }
-                                return NumberParseHelper.validateRequired(
-                                  value,
-                                  field: 'comprimento',
-                                );
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: TextFormField(
-                              controller: _larguraController,
-                              decoration: const InputDecoration(
-                                labelText: 'Largura da chapa - mm',
-                                labelStyle: TextStyle(color: Colors.white),
-                                prefixIcon: Icon(Icons.straighten,
-                                    color: Color(0xFFFABA00)),
-                                suffixText: 'mm',
-                              ),
-                              style: const TextStyle(color: Colors.white),
-                              keyboardType: const TextInputType.numberWithOptions(
-                                  decimal: true),
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return null;
-                                }
-                                return NumberParseHelper.validateRequired(
-                                  value,
-                                  field: 'largura',
-                                );
-                              },
-                            ),
-                          ),
-                        ],
+                      TextFormField(
+                        controller: _comprimentoController,
+                        decoration: const InputDecoration(
+                          labelText: 'Comprimento da prensa - m',
+                          labelStyle: TextStyle(color: Colors.white),
+                          prefixIcon: Icon(Icons.straighten,
+                              color: Color(0xFFFABA00)),
+                          suffixText: 'm',
+                        ),
+                        style: const TextStyle(color: Colors.white),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return null;
+                          }
+                          return NumberParseHelper.validateRequired(
+                            value,
+                            field: 'comprimento',
+                          );
+                        },
                       ),
                       const SizedBox(height: 16),
-
-                      // Espessura
-                      DropdownButtonFormField<String>(
-                        value: _espessuraSelecionada,
+                      TextFormField(
+                        controller: _velocidadeController,
                         decoration: const InputDecoration(
-                          labelText: 'Espessura da chapa - mm',
+                          labelText: 'Velocidade - mm/s',
                           labelStyle: TextStyle(color: Colors.white),
                           prefixIcon:
-                              Icon(Icons.height, color: Color(0xFFFABA00)),
+                              Icon(Icons.speed, color: Color(0xFFFABA00)),
+                          suffixText: 'mm/s',
                         ),
-                        dropdownColor: Colors.grey[900],
                         style: const TextStyle(color: Colors.white),
-                        items:
-                            EspessuraConstants.opcoes.map((String espessura) {
-                          return DropdownMenuItem<String>(
-                            value: espessura,
-                            child: Text('$espessura mm'),
-                          );
-                        }).toList(),
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            _espessuraSelecionada = newValue;
-                          });
-                        },
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor, selecione a espessura';
-                          }
-                          return null;
-                        },
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        validator: (value) => NumberParseHelper.validateRequired(
+                          value,
+                          field: 'velocidade',
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+
+                      // Foto Engrenagem – Dados da Chapa: Produto, Largura, Espessura
+                      _buildSectionHeader(
+                        'Foto Engrenagem – Dados da Chapa',
+                        Icons.layers,
+                        infoMensagem: CampoInfoHelper.dadosChapa,
                       ),
                       const SizedBox(height: 16),
-
-                      // Produto
                       DropdownButtonFormField<String>(
                         value: _produtoSelecionado,
                         decoration: const InputDecoration(
@@ -458,162 +381,64 @@ class _CadastroPrensaTemperaturaScreenState
                         },
                       ),
                       const SizedBox(height: 16),
-
-                      // Velocidade
                       TextFormField(
-                        controller: _velocidadeController,
+                        controller: _larguraController,
                         decoration: const InputDecoration(
-                          labelText: 'Velocidade - mm/s',
+                          labelText: 'Largura da chapa - mm',
                           labelStyle: TextStyle(color: Colors.white),
-                          prefixIcon:
-                              Icon(Icons.speed, color: Color(0xFFFABA00)),
-                          suffixText: 'mm/s',
+                          prefixIcon: Icon(Icons.straighten,
+                              color: Color(0xFFFABA00)),
+                          suffixText: 'mm',
                         ),
                         style: const TextStyle(color: Colors.white),
                         keyboardType: const TextInputType.numberWithOptions(
                             decimal: true),
-                        validator: (value) => NumberParseHelper.validateRequired(
-                          value,
-                          field: 'velocidade',
-                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return null;
+                          }
+                          return NumberParseHelper.validateRequired(
+                            value,
+                            field: 'largura',
+                          );
+                        },
                       ),
                       const SizedBox(height: 16),
-
-                      // Produtos de Lubrificação
-                      _buildSectionHeader(
-                        'Produtos de Lubrificação',
-                        Icons.opacity,
-                        infoMensagem: CampoInfoHelper.produtosLubrificacao,
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Produto Cinta
                       DropdownButtonFormField<String>(
-                        value: _produtoCintaSelecionado,
+                        value: _espessuraSelecionada,
                         decoration: const InputDecoration(
-                          labelText: 'Produto Cinta',
+                          labelText: 'Espessura da chapa - mm',
                           labelStyle: TextStyle(color: Colors.white),
                           prefixIcon:
-                              Icon(Icons.opacity, color: Color(0xFFFABA00)),
+                              Icon(Icons.height, color: Color(0xFFFABA00)),
                         ),
                         dropdownColor: Colors.grey[900],
                         style: const TextStyle(color: Colors.white),
-                        items: _tiposProdutosCinta.map((String produto) {
+                        items:
+                            EspessuraConstants.opcoes.map((String espessura) {
                           return DropdownMenuItem<String>(
-                            value: produto,
-                            child: Text(produto),
+                            value: espessura,
+                            child: Text('$espessura mm'),
                           );
                         }).toList(),
                         onChanged: (String? newValue) {
                           setState(() {
-                            _produtoCintaSelecionado = newValue;
+                            _espessuraSelecionada = newValue;
                           });
                         },
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Por favor, selecione o produto da cinta';
+                            return 'Por favor, selecione a espessura';
                           }
                           return null;
                         },
                       ),
-                      const SizedBox(height: 16),
-
-                      if (_permiteCorrente) ...[
-                        // Produto Corrente
-                        DropdownButtonFormField<String>(
-                          value: _produtoCorrenteSelecionado,
-                          decoration: const InputDecoration(
-                            labelText: 'Produto Corrente',
-                            labelStyle: TextStyle(color: Colors.white),
-                            prefixIcon:
-                                Icon(Icons.opacity, color: Color(0xFFFABA00)),
-                          ),
-                          dropdownColor: Colors.grey[900],
-                          style: const TextStyle(color: Colors.white),
-                          items: _tiposProdutosCorrente.map((String produto) {
-                            return DropdownMenuItem<String>(
-                              value: produto,
-                              child: Text(produto),
-                            );
-                          }).toList(),
-                          onChanged: (String? newValue) {
-                            setState(() {
-                              _produtoCorrenteSelecionado = newValue;
-                            });
-                          },
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Por favor, selecione o produto da corrente';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      if (_permiteBendRods) ...[
-                        // Produto Bendroads
-                        DropdownButtonFormField<String>(
-                          value: _produtoBendroadsSelecionado,
-                          decoration: InputDecoration(
-                            labelText: 'Produto Bendroads',
-                            labelStyle: const TextStyle(color: Colors.white),
-                            prefixIcon:
-                                const Icon(Icons.opacity, color: Color(0xFFFABA00)),
-                            suffixIcon: CampoInfoHelper.botao(
-                              context,
-                              titulo: 'Bend rods',
-                              mensagem: CampoInfoHelper.bendRods,
-                            ),
-                          ),
-                          dropdownColor: Colors.grey[900],
-                          style: const TextStyle(color: Colors.white),
-                          items: _tiposProdutosBendroads.map((String produto) {
-                            return DropdownMenuItem<String>(
-                              value: produto,
-                              child: Text(produto),
-                            );
-                          }).toList(),
-                          onChanged: (String? newValue) {
-                            setState(() {
-                              _produtoBendroadsSelecionado = newValue;
-                            });
-                          },
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Por favor, selecione o produto bendroads';
-                            }
-                            return null;
-                          },
-                        ),
-                      ],
                       const SizedBox(height: 32),
-
-                      // Campo de Comentário — oculto, não é exibido em nenhum lugar
-                      // TextFormField(
-                      //   controller: _comentarioController,
-                      //   decoration: const InputDecoration(
-                      //     labelText: 'Comentário',
-                      //     labelStyle: TextStyle(color: Colors.white),
-                      //     prefixIcon:
-                      //         Icon(Icons.comment, color: Color(0xFFFABA00)),
-                      //     enabledBorder: UnderlineInputBorder(
-                      //       borderSide: BorderSide(color: Colors.grey),
-                      //     ),
-                      //     focusedBorder: UnderlineInputBorder(
-                      //       borderSide: BorderSide(color: Color(0xFFFABA00)),
-                      //     ),
-                      //     border: UnderlineInputBorder(),
-                      //   ),
-                      //   style: const TextStyle(color: Colors.white),
-                      //   maxLines: 3,
-                      //   keyboardType: TextInputType.multiline,
-                      // ),
 
                       // Seção de Temperaturas
                       if (_showTemperaturaSection) ...[
-                        const SizedBox(height: 32),
                         _buildSectionHeader(
-                          'Temperaturas das Zonas',
+                          'Temperaturas da Prensa',
                           Icons.thermostat,
                           infoMensagem: CampoInfoHelper.temperaturasZonas,
                         ),
@@ -768,9 +593,6 @@ class _CadastroPrensaTemperaturaScreenState
     _larguraController.dispose();
     _produtoController.dispose();
     _velocidadeController.dispose();
-    _produtoCintaController.dispose();
-    _produtoCorrenteController.dispose();
-    _produtoBendroadsController.dispose();
     _zona1Controller.dispose();
     _zona2Controller.dispose();
     _zona3Controller.dispose();

@@ -67,7 +67,7 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
   final List<String> _tiposProdutosCinta = [
     'Hotemp Super N',
     'Hotemp Super N Plus',
-    'Klubersynh CP 2-260',
+    'Klubersynth CP 2-260',
     'Outro',
     'N/A'
   ];
@@ -75,10 +75,10 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
 
   final List<String> _tiposProdutosCorrente = [
     'Hotemp Super CH 2-100',
-    'Klubersynh CP 2-100',
+    'Klubersynth CP 2-100',
     'Hotemp Super N',
     'Hotemp Super N Plus',
-    'Klubersynh CP 2-260',
+    'Klubersynth CP 2-260',
     'Outro',
     'N/A'
   ];
@@ -86,7 +86,7 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
 
   final List<String> _tiposProdutosBendroads = [
     'Hotemp Super CH 2-100',
-    'Klubersynh CP 2-100',
+    'Klubersynth CP 2-100',
     'Outro',
     'N/A'
   ];
@@ -433,7 +433,7 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
 
                 // Produtos de Lubrificação
                 _buildSectionHeader(
-                  'Produtos de Lubrificação',
+                  'Lubrificantes',
                   Icons.opacity,
                   infoMensagem: CampoInfoHelper.produtosLubrificacao,
                 ),
@@ -520,7 +520,7 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
                   DropdownButtonFormField<String>(
                     value: _produtoBendroadsSelecionado,
                     decoration: InputDecoration(
-                      labelText: 'Produto Bendroads',
+                      labelText: 'Produto Bend Rods',
                       labelStyle: const TextStyle(color: Colors.white),
                       prefixIcon:
                           const Icon(Icons.category, color: Color(0xFFFABA00)),
@@ -585,7 +585,7 @@ class _CadastroPrensaScreenState extends State<CadastroPrensaScreen> {
 
                 // Temperaturas das Zonas
                 _buildSectionHeader(
-                  'Temperaturas das Zonas',
+                  'Temperaturas da Prensa',
                   Icons.thermostat,
                   infoMensagem: CampoInfoHelper.temperaturasZonas,
                 ),

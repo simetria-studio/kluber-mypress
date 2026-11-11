@@ -3,7 +3,7 @@ class UnidadeMedidaConstants {
   static const String largura = 'mm';
   static const String espessura = 'mm';
   static const String velocidade = 'mm/s';
-  static const String consumo = 'l/D';
+  static const String consumo = 'L/dia';
   static const String temperatura = '°C';
 
   static Map<String, String> get paraReporte => {

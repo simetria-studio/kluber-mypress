@@ -158,7 +158,7 @@ class _CadastroTemperaturaScreenState extends State<CadastroTemperaturaScreen> {
                             const SizedBox(width: 8),
                             const Expanded(
                               child: Text(
-                                'Temperaturas das Zonas',
+                                'Temperaturas da Prensa',
                                 style: TextStyle(
                                   color: Color(0xFFFABA00),
                                   fontSize: 18,
@@ -168,7 +168,7 @@ class _CadastroTemperaturaScreenState extends State<CadastroTemperaturaScreen> {
                             ),
                             CampoInfoHelper.botao(
                               context,
-                              titulo: 'Temperaturas das Zonas',
+                              titulo: 'Temperaturas da Prensa',
                               mensagem: CampoInfoHelper.temperaturasZonas,
                             ),
                           ],

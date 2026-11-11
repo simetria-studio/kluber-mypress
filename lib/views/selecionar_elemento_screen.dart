@@ -4,15 +4,20 @@ import '../models/elemento_model.dart';
 import '../models/comentario_elemento_model.dart';
 import '../models/problema_model.dart';
 import '../database/database_helper.dart';
-import 'cadastro_comentario_elemento_screen.dart';
-import 'cadastro_anexo_screen.dart';
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as p;
 import '../models/anexo_comentario_model.dart';
 import 'editar_elemento_screen.dart';
 import '../widgets/custom_bottom_nav.dart';
 import 'cadastro_comentario_visita_screen.dart';
 import '../helpers/aplicacao_prensa_helper.dart';
+import '../helpers/lubrificante_produto_helper.dart';
 import '../helpers/number_parse_helper.dart';
+import '../helpers/unidade_medida_constants.dart';
 
 class SelecionarElementoScreen extends StatefulWidget {
   final int prensaId;
@@ -49,7 +54,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
 
   final List<String> _tiposLubrificantes = [
     'Klubersynth GH 6',
-    'Klubersynhth GEM 4',
+    'Klubersynth GEM 4',
     'Kluberoil GEM 1',
     'Klubersynth MEG 4',
     'Outros'
@@ -113,7 +118,23 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
       final comentariosPorElemento = <int, List<ComentarioElemento>>{};
       for (var elemento in elementos) {
         if (elemento.id != null) {
-          final comentarios = await DatabaseHelper.instance
+          var comentarios = await DatabaseHelper.instance
+              .getComentariosByElemento(elemento.id!);
+
+          // Remove placeholders "Foto" sem anexo (órfãos após exclusão)
+          for (final comentario in List<ComentarioElemento>.from(comentarios)) {
+            if (comentario.id == null) continue;
+            final texto = comentario.comentario.trim().toLowerCase();
+            if (texto != 'foto') continue;
+            final anexos = await DatabaseHelper.instance
+                .getAnexosByComentario(comentario.id!);
+            if (anexos.isEmpty) {
+              await DatabaseHelper.instance
+                  .deleteComentarioElemento(comentario.id!);
+            }
+          }
+
+          comentarios = await DatabaseHelper.instance
               .getComentariosByElemento(elemento.id!);
           comentariosPorElemento[elemento.id!] = comentarios;
         }
@@ -130,7 +151,10 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
           _comentarioRedutorController.text = problema.comentarioRedutorPrincipal ?? '';
           _comentarioTemperaturaController.text = problema.comentarioTemperatura ?? '';
           _comentarioTamborController.text = problema.comentarioTamborPrincipal ?? '';
-          _lubrificanteSelecionado = problema.lubrificanteRedutorPrincipal;
+          _lubrificanteSelecionado = LubrificanteProdutoHelper.valorNaLista(
+            problema.lubrificanteRedutorPrincipal,
+            _tiposLubrificantes,
+          );
           _graxaRolamentosSelecionada = problema.graxaRolamentosZonasQuentes;
           _graxaTamborSelecionada = problema.graxaTamborPrincipal;
         });
@@ -188,6 +212,13 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                   DatabaseHelper.instance.getAnexosByComentario(comentario.id!),
               builder: (context, snapshot) {
                 final anexos = snapshot.data ?? [];
+                final texto = comentario.comentario.trim();
+                final ehSomenteFoto = texto.toLowerCase() == 'foto';
+
+                // Comentário placeholder de foto sem anexo: não exibe
+                if (ehSomenteFoto && anexos.isEmpty) {
+                  return const SizedBox.shrink();
+                }
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),
@@ -202,31 +233,20 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              comentario.comentario,
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 14,
-                              ),
-                            ),
+                      if (!ehSomenteFoto && texto.isNotEmpty)
+                        Text(
+                          texto,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
                           ),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.attach_file,
-                              color: Color(0xFFFABA00),
-                              size: 20,
-                            ),
-                            onPressed: () => _adicionarAnexo(comentario),
-                          ),
-                        ],
-                      ),
+                        ),
                       if (anexos.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        const Divider(color: Colors.grey),
-                        const SizedBox(height: 8),
+                        if (!ehSomenteFoto && texto.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          const Divider(color: Colors.grey),
+                          const SizedBox(height: 8),
+                        ],
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
@@ -235,37 +255,43 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                               onTap: () {
                                 _exibirImagemCompleta(context, anexo);
                               },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  maxWidth:
+                                      MediaQuery.of(context).size.width - 80,
                                 ),
-                                decoration: BoxDecoration(
-                                  color:
-                                      const Color(0xFFFABA00).withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: const Color(0xFFFABA00),
-                                    width: 1,
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFABA00)
+                                        .withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: const Color(0xFFFABA00),
+                                      width: 1,
+                                    ),
                                   ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.attachment,
-                                      color: Color(0xFFFABA00),
-                                      size: 16,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      anexo.nome,
-                                      style: const TextStyle(
-                                        color: Color(0xFFFABA00),
-                                        fontSize: 12,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(6),
+                                        child: _buildAnexoThumbnail(anexo),
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(width: 8),
+                                      Flexible(
+                                        child: Text(
+                                          anexo.nome,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            color: Color(0xFFFABA00),
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             );
@@ -293,6 +319,8 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
               backgroundColor: Colors.black.withOpacity(0.7),
               title: Text(
                 anexo.nome,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(color: Colors.white),
               ),
               leading: IconButton(
@@ -328,25 +356,23 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                             onPressed: () async {
                               try {
                                 await DatabaseHelper.instance
-                                    .deleteAnexoComentario(anexo.id!);
+                                    .deleteAnexoEComentarioSeVazio(anexo);
                                 if (mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                         content:
-                                            Text('Anexo excluído com sucesso')),
+                                            Text('Foto excluída com sucesso')),
                                   );
-                                  // Fechar os dois diálogos
                                   Navigator.pop(context);
                                   Navigator.pop(context);
-                                  // Atualizar a tela
-                                  setState(() {});
+                                  await _carregarDados();
                                 }
                               } catch (e) {
                                 if (mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                         content: Text(
-                                            'Erro ao excluir anexo: ${e.toString()}')),
+                                            'Erro ao excluir foto: ${e.toString()}')),
                                   );
                                   Navigator.pop(context);
                                 }
@@ -369,12 +395,70 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
               boundaryMargin: const EdgeInsets.all(20),
               minScale: 0.5,
               maxScale: 4,
-              child: Image.memory(
-                base64Decode(anexo.base64),
-                fit: BoxFit.contain,
-              ),
+              child: _buildAnexoImage(anexo, fit: BoxFit.contain),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Uint8List? _bytesDoAnexo(AnexoComentario anexo) {
+    try {
+      if (anexo.base64.isEmpty) return null;
+      var raw = anexo.base64;
+      if (raw.contains(',')) {
+        raw = raw.split(',').last;
+      }
+      return base64Decode(raw);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Widget _buildAnexoThumbnail(AnexoComentario anexo) {
+    final bytes = _bytesDoAnexo(anexo);
+    if (bytes == null) {
+      return Container(
+        width: 48,
+        height: 48,
+        color: Colors.black26,
+        child: const Icon(Icons.broken_image, color: Color(0xFFFABA00), size: 20),
+      );
+    }
+    return Image.memory(
+      bytes,
+      width: 48,
+      height: 48,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => Container(
+        width: 48,
+        height: 48,
+        color: Colors.black26,
+        child: const Icon(Icons.broken_image, color: Color(0xFFFABA00), size: 20),
+      ),
+    );
+  }
+
+  Widget _buildAnexoImage(AnexoComentario anexo, {BoxFit fit = BoxFit.contain}) {
+    final bytes = _bytesDoAnexo(anexo);
+    if (bytes == null) {
+      return const Padding(
+        padding: EdgeInsets.all(24),
+        child: Text(
+          'Não foi possível carregar a foto.',
+          style: TextStyle(color: Colors.white70),
+        ),
+      );
+    }
+    return Image.memory(
+      bytes,
+      fit: fit,
+      errorBuilder: (_, __, ___) => const Padding(
+        padding: EdgeInsets.all(24),
+        child: Text(
+          'Não foi possível carregar a foto.',
+          style: TextStyle(color: Colors.white70),
         ),
       ),
     );
@@ -400,41 +484,6 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // _buildOptionCard(
-                  //   context,
-                  //   title: 'Novo Elemento',
-                  //   description: 'Adicione um novo elemento para esta prensa',
-                  //   icon: Icons.add_circle_outline,
-                  //   onTap: () async {
-                  //     final result = await Navigator.push(
-                  //       context,
-                  //       MaterialPageRoute(
-                  //         builder: (context) =>
-                  //             CadastroElementoScreen(prensaId: widget.prensaId),
-                  //       ),
-                  //     );
-                  //     if (result == true) {
-                  //       _carregarDados();
-                  //     }
-                  //   },
-                  // ),
-
-                  const SizedBox(height: 16),
-
-                  if (_elementos.isNotEmpty) ...[
-                    const Text(
-                      'Aplicações da prensa',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    ..._elementos.map(_buildElementoRow),
-                    const SizedBox(height: 24),
-                  ],
-
                   if (_elementos.where(_isElementoMonitorado).isNotEmpty) ...[
                     const Text(
                       'Aplicações da prensa',
@@ -457,6 +506,20 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                     const SizedBox(height: 24),
                   ],
 
+                  if (_elementos.isNotEmpty) ...[
+                    const Text(
+                      'Aplicações da prensa',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ..._elementos.map(_buildElementoRow),
+                    const SizedBox(height: 24),
+                  ],
+
                   // Formulário de Demais Aplicações
                   Form(
                     key: _formKey,
@@ -464,7 +527,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Demais pontos de Lubrificação da prensa',
+                          'Demais pontos de lubrificação da prensa',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 16,
@@ -872,7 +935,7 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            '${value.toStringAsFixed(2)}\nl/D',
+            '${value.toStringAsFixed(2)}\n${UnidadeMedidaConstants.consumo}',
             style: const TextStyle(
               color: Colors.white,
               fontSize: 14,
@@ -1058,16 +1121,16 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
                     children: [
                       Expanded(
                         child: OutlinedButton.icon(
-                          icon: const Icon(Icons.comment,
+                          icon: const Icon(Icons.photo_camera,
                               size: 16, color: Color(0xFFFABA00)),
-                          label: const Text('Comentar'),
+                          label: const Text('Foto'),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: const Color(0xFFFABA00),
                             side: const BorderSide(color: Color(0xFFFABA00)),
                           ),
                           onPressed: () {
                             Navigator.pop(sheetContext);
-                            _adicionarComentario(elemento);
+                            _adicionarFoto(elemento);
                           },
                         ),
                       ),
@@ -1248,34 +1311,106 @@ class _SelecionarElementoScreenState extends State<SelecionarElementoScreen> {
     });
   }
 
-  void _adicionarComentario(Elemento elemento) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CadastroComentarioElementoScreen(
+  Future<void> _adicionarFoto(Elemento elemento) async {
+    if (elemento.id == null) return;
+
+    final ImagePicker picker = ImagePicker();
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: Colors.grey[900],
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Wrap(
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: Color(0xFFFABA00)),
+                title:
+                    const Text('Câmera', style: TextStyle(color: Colors.white)),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+              ListTile(
+                leading:
+                    const Icon(Icons.photo_library, color: Color(0xFFFABA00)),
+                title: const Text('Galeria',
+                    style: TextStyle(color: Colors.white)),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (source == null) return;
+
+    try {
+      final XFile? image = await picker.pickImage(source: source);
+      if (image == null) return;
+
+      final File originalFile = File(image.path);
+      final String originalName = p.basename(image.path);
+      final String targetPath = originalFile.path.replaceAll(
+        '.${originalFile.path.split('.').last}',
+        '_compressed.jpg',
+      );
+
+      final compressedFile = await FlutterImageCompress.compressAndGetFile(
+        originalFile.path,
+        targetPath,
+        quality: 70,
+        format: CompressFormat.jpeg,
+        minWidth: 1024,
+        minHeight: 1024,
+      );
+
+      if (compressedFile == null) {
+        throw Exception('Falha ao processar a foto');
+      }
+
+      final file = File(compressedFile.path);
+      final bytes = await file.readAsBytes();
+      final base64Image = base64Encode(bytes);
+      final nomeAnexo = originalName.contains('.')
+          ? '${p.basenameWithoutExtension(originalName)}.jpg'
+          : '$originalName.jpg';
+
+      final comentarioId =
+          await DatabaseHelper.instance.createComentarioElemento(
+        ComentarioElemento(
+          comentario: 'Foto',
           elementoId: elemento.id!,
         ),
-      ),
-    ).then((value) {
-      if (value == true) {
-        _carregarDados();
-      }
-    });
-  }
+      );
 
-  void _adicionarAnexo(ComentarioElemento comentario) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CadastroAnexoScreen(
-          comentarioId: comentario.id!,
+      await DatabaseHelper.instance.createAnexoComentario(
+        AnexoComentario(
+          nome: nomeAnexo,
+          tipo: 'image/jpeg',
+          url: file.path,
+          base64: base64Image,
+          comentarioId: comentarioId,
         ),
-      ),
-    ).then((value) {
-      if (value == true) {
-        _carregarDados();
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Foto adicionada com sucesso!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        await _carregarDados();
       }
-    });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao adicionar foto: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _salvarProblema() async {

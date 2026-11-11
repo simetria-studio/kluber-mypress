@@ -29,7 +29,7 @@ class _CadastroProblemaScreenState extends State<CadastroProblemaScreen> {
 
   final List<String> _tiposLubrificantes = [
     'Klubersynth GH 6',
-    'Klubersynhth GEM 4',
+    'Klubersynth GEM 4',
     'Kluberoil GEM 1',
     'Klubersynth MEG 4',
     'Outros'
